@@ -1,7 +1,7 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
-import 'screens/recipe_list_screen.dart';
+import 'package:recipe_manager/screens/main_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 255, 255, 255)),
         useMaterial3: true, 
       ),
-      home: RecipeListScreen(),
+      home: MainScreen(),
     );
   }
 }

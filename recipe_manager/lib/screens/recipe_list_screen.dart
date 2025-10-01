@@ -1,35 +1,30 @@
 // lib/screens/recipe_list_screen.dart
 
 import 'package:flutter/material.dart';
-import '../models/recipe_model.dart';      
-import '../widgets/recipe_list_item.dart'; 
+import '../widgets/recipe_list_item.dart';
+import '../services/mock_recipe_service.dart';
+import '../models/recipe_model.dart';
 
-class RecipeListScreen extends StatefulWidget {
+class RecipeListScreen extends StatelessWidget {
   const RecipeListScreen({super.key});
 
   @override
-  State<RecipeListScreen> createState() => _RecipeListScreenState();
-}
-
-class _RecipeListScreenState extends State<RecipeListScreen> {
-  // Create some dummy data to display
-  final List<Recipe> recipes = [
-    Recipe(title: 'Spaghetti Bolognese', description: 'A classic Italian dish', cookTime: 45),
-    Recipe(title: 'Chicken Curry', description: 'Spicy and flavorful', cookTime: 30),
-    Recipe(title: 'Pancakes', description: 'Perfect for breakfast', cookTime: 15),
-  ];
-
-  @override
   Widget build(BuildContext context) {
+    // Instantiate service and get the list of recipes
+    final MockRecipeService mrs = MockRecipeService();
+    final List<Recipe> recipes = mrs.getRecipes();
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Recipes'),
-      ),
-      body: ListView.builder(
-        itemCount: recipes.length,
-        itemBuilder: (BuildContext context, int index) {
-            return RecipeListItem(recipe: recipes[index]);
-        },
+      body: SafeArea(
+        child: ListView.builder(
+          itemCount: recipes.length,
+          itemBuilder: (BuildContext context, int index) {
+            // Get the specific recipe from the list by its index
+            final recipe = recipes[index];
+            // Pass the recipe object to list item widget
+            return RecipeListItem(recipe: recipe);
+          },
+        ),
       ),
     );
   }
