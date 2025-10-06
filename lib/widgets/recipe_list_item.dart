@@ -1,10 +1,10 @@
 // lib/widgets/recipe_list_item.dart
 
 import 'package:flutter/material.dart';
-import '../models/recipe_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RecipeListItem extends StatelessWidget {
-  final Recipe recipe;
+  final PostgrestMap recipe;
 
   const RecipeListItem({super.key, required this.recipe});
 
@@ -17,19 +17,19 @@ class RecipeListItem extends StatelessWidget {
         leading: CircleAvatar(
           backgroundColor: Theme.of(context).primaryColor,
           child: Text(
-            recipe.title[0], 
+            recipe['name'][0], 
             style: const TextStyle(color: Colors.white)
           ), 
         ),
 
-        title: Text(recipe.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(recipe['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
 
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
             Text(
-              recipe.description,
+              recipe['description'],
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -38,18 +38,18 @@ class RecipeListItem extends StatelessWidget {
               children: [
                 const Icon(Icons.timer_outlined, size: 16),
                 const SizedBox(width: 4),
-                Text('${recipe.cookTime} min'),
+                Text('${recipe['cook-time']} min'),
                 const SizedBox(width: 12),
                 const Icon(Icons.local_fire_department_outlined, size: 16),
                 const SizedBox(width: 4),
-                Text('${recipe.calories} kcal'),
+                Text('${recipe['calories']} kcal'),
               ],
             ),
           ],
         ),
 
         onTap: () {
-          print('Tapped on ${recipe.title}');
+          print('Tapped on ${recipe['name']}');
           // TODO: Navigate to the recipe details screen
         },
       ),
