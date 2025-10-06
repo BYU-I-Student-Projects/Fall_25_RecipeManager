@@ -4,7 +4,7 @@ class MockRecipeService {
   List<Recipe> getRecipes() {
     return [
       Recipe(id: 0, 
-        title: 'Pancakes',
+        title: 'Fluffy Pancakes',
         ingredients: ["Flour", "Eggs", "Butter"],
         instructions: [
           "Step 1. Mix ingredients",
