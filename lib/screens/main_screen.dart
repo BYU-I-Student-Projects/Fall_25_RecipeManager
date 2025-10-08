@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '/../screens/recipe_list_screen.dart';
+import '/../screens/calendar_screen.dart';
 // import 'shopping_list_screen.dart';
 // import 'profile_screen.dart';
 
@@ -20,9 +21,9 @@ class _MainScreenState extends State<MainScreen> {
   static const List<Widget> _widgetOptions = <Widget>[
     RecipeListScreen(),
     // TODO: Replace the placeholders below with actual screen widgets
-    Scaffold(body: Center(child: Text('Shopping List Screen'))), 
+    Scaffold(body: Center(child: Text('Grocery List Screen')) ),
     Scaffold(body: Center(child: Text('Create Recipe Screen'))),
-    Scaffold(body: Center(child: Text('Calendar Screen'))),
+    CalendarScreen(),
     Scaffold(body: Center(child: Text('Settings Screen'))),
   ];
 
