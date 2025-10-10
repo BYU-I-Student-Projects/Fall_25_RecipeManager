@@ -1,15 +1,15 @@
 // lib/models/recipe_model.dart
 
 class Recipe {
-  final int id;
+  final int id; 
   final String title;
-  final List<String> ingredients; // Or a more complex Ingredient model
+  final List<String> ingredients; 
   final List<String> instructions;
   final int prepTime; // In minutes
   final int cookTime; // In minutes
   final int servings;
   final int calPerServing;
-  final String cuisine;
+  final String cuisine; // e.g., Italian, Chinese
   final String dietRestrictions; // e.g., Vegan, Gluten-Free
 
   Recipe({
@@ -30,9 +30,7 @@ class Recipe {
     return Recipe(
       id: json['id'],
       title: json['name'] ?? '', // Default to empty string if null
-      // Splitting the 'text' column into a List<String>.
-      // Assumes ingredients are separated by a newline character ('\n').
-      // Change '\n' to ',' or another delimiter if you store it differently.
+      // Splitting the 'text' column into a List<String>
       ingredients: (json['ingredients'] ?? '').split(' , '),
       instructions: (json['instructions'] ?? '').split(' , '),
       
