@@ -7,8 +7,6 @@ class RecipeService {
   Future<List<Recipe>> getRecipes() async {
     final data = await _client.from('recipes').select();
 
-    print(data); // temporary debug line
-
     return data.map((item) => Recipe.fromMap(item)).toList();
   }
 
