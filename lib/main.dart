@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:recipe_manager/screens/main_screen.dart';
+import 'package:provider/provider.dart';
+import '../providers/recipe_provider.dart';
 
 Future<void> main() async {
   // Makes sure that all the widgets are initialized before running the app
@@ -20,13 +22,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Recipe App',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 255, 255, 255)),
-        useMaterial3: true, 
+    return ChangeNotifierProvider(
+      create: (context) => RecipeProvider(),
+      child: MaterialApp(
+        title: 'Recipe App',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 255, 255, 255)),
+          useMaterial3: true, 
+        ),
+        home: MainScreen(),
       ),
-      home: MainScreen(),
     );
   }
 }
