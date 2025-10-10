@@ -20,6 +20,11 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFEEE0CB),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF839788),
+        title: const Text('Recipes'),
+      ),
       body: FutureBuilder(
         future: _future,
         builder: (context, snapshot) {
