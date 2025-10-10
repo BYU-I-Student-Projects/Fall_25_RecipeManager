@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import '/../screens/recipe_list_screen.dart';
 import '/../screens/grocery_list_screen.dart';
 import '/../screens/calendar_screen.dart';
-// import 'shopping_list_screen.dart';
-// import 'profile_screen.dart';
+import '/../screens/user_settings_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -24,8 +23,8 @@ class _MainScreenState extends State<MainScreen> {
     GroceryListScreen(),
     Scaffold(body: Center(child: Text('Create Recipe Screen'))),
     CalendarScreen(),
-    Scaffold(body: Center(child: Text('Settings Screen'))),
-  ];
+    SettingsScreen(),
+  ]; 
 
   // This function is called when a tab is tapped.
   void _onItemTapped(int index) {
