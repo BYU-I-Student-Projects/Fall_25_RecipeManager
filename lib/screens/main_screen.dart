@@ -41,6 +41,7 @@ class _MainScreenState extends State<MainScreen> {
         child: _widgetOptions.elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: const Color(0xFFBAA898),
         type: BottomNavigationBarType.fixed, // Ensures all items are shown
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -65,7 +66,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
         currentIndex: _selectedIndex, // Highlights the correct tab
-        selectedItemColor: Theme.of(context).primaryColor, // Or preferred color
+        selectedItemColor: const Color(0xFFFFFFFF), // Or preferred color
         onTap: _onItemTapped, // Calls when a tab is tapped
       ),
     );
