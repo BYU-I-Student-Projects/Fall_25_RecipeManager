@@ -39,7 +39,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             onDaySelected: (selectedDay, focusedDay) {
               if (!isSameDay(_selectedDay, selectedDay)) {
                 setState(() {
-                  _selectedDay = selectedDay;
+                  _selectedDay = DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
                   _focusedDay = focusedDay;
                 });
               }
@@ -75,7 +75,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           Expanded(
             child: Center(
               child: _selectedDay != null
-                  ? Text('Selected day: ${_selectedDay!.toLocal().toString().split(' ')[0]}')
+                  ? Text('Selected day: ${_selectedDay!.year}-${_selectedDay!.month.toString().padLeft(2, '0')}-${_selectedDay!.day.toString().padLeft(2, '0')}')
                   : const Text('No day selected'),
             ),
           ),
