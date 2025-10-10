@@ -1,157 +1,63 @@
-import '../models/recipe_model.dart';    
+import '../models/recipe_model.dart';
 
 class MockRecipeService {
-  List<Recipe> getRecipes() {
-    return [
-      Recipe(id: 0, 
-        title: 'Fluffy Pancakes',
-        ingredients: ["Flour", "Eggs", "Butter"],
-        instructions: [
-          "Step 1. Mix ingredients",
-          "Step 2. Cook pancakes",
-          "Step 3. Drizzle syrup on top",
-        ],
-        description: "Fluffy pancakes for a great breakfast!",
-        cookTime: 20,
-        calories: 600,
-      ),
-      Recipe(id: 1, 
-        title: 'Scrambled Eggs',
-        ingredients: ["Eggs", "Milk", "Butter"],
-        instructions: [
-          "Step 1. Crack eggs and scramble",
-          "Step 2. Mix in milk",
-          "Step 3. Fry on a pan",
-        ],
-        description: "Eggs scrambled up and served to delight.",
-        cookTime: 10,
-        calories: 250,
-      ),
-      Recipe(id: 2, 
-        title: 'Grilled Cheese',
-        ingredients: ["Bread", "Cheese", "Butter"],
-        instructions: [
-          "Step 1. Butter the outside of two bread slices",
-          "Step 2. Place cheese between the slices",
-          "Step 3. Grill in a pan until golden brown",
-        ],
-        description: "The ultimate comfort food sandwich.",
-        cookTime: 10,
-        calories: 400,
-      ),
-      Recipe(id: 3, 
-        title: 'Spaghetti Marinara',
-        ingredients: ["Spaghetti", "Marinara Sauce", "Parmesan"],
-        instructions: [
-          "Step 1. Boil spaghetti according to package",
-          "Step 2. Heat marinara sauce in a saucepan",
-          "Step 3. Combine and top with parmesan cheese",
-        ],
-        description: "A quick and easy Italian classic.",
-        cookTime: 25,
-        calories: 550,
-      ),
-      Recipe(id: 4, 
-        title: 'Oatmeal',
-        ingredients: ["Rolled Oats", "Water or Milk", "Brown Sugar"],
-        instructions: [
-          "Step 1. Bring liquid to a boil",
-          "Step 2. Stir in oats and reduce heat",
-          "Step 3. Cook until creamy and add sugar to taste",
-        ],
-        description: "A warm and hearty breakfast to start your day.",
-        cookTime: 5,
-        calories: 200,
-      ),
-      Recipe(id: 5, 
-        title: 'Cheese Quesadilla',
-        ingredients: ["Tortilla", "Shredded Cheese", "Butter"],
-        instructions: [
-          "Step 1. Melt butter in a pan over medium heat",
-          "Step 2. Place tortilla in pan and sprinkle with cheese",
-          "Step 3. Fold and cook until golden brown on both sides",
-        ],
-        description: "Cheesy, crispy, and delicious in minutes.",
-        cookTime: 10,
-        calories: 350,
-      ),
-      Recipe(id: 6, 
-        title: 'Chicken Noodle Soup',
-        ingredients: ["Chicken Broth", "Egg Noodles", "Cooked Chicken"],
-        instructions: [
-          "Step 1. Bring chicken broth to a boil",
-          "Step 2. Add egg noodles and cooked chicken pieces",
-          "Step 3. Simmer until noodles are tender",
-        ],
-        description: "The perfect soup for a cold day.",
-        cookTime: 15,
-        calories: 300,
-      ),
-      Recipe(id: 7, 
-        title: 'BLT Sandwich',
-        ingredients: ["Bacon", "Lettuce", "Tomato", "Bread", "Mayonnaise"],
-        instructions: [
-          "Step 1. Cook bacon until crispy",
-          "Step 2. Toast the bread slices lightly",
-          "Step 3. Assemble sandwich with mayo, lettuce, tomato, and bacon",
-        ],
-        description: "A timeless sandwich with a satisfying crunch.",
-        cookTime: 15,
-        calories: 450,
-      ),
-      Recipe(id: 8, 
-        title: 'Simple Garden Salad',
-        ingredients: ["Lettuce", "Tomatoes", "Cucumbers", "Dressing"],
-        instructions: [
-          "Step 1. Chop vegetables to desired size",
-          "Step 2. Combine all ingredients in a large bowl",
-          "Step 3. Toss with your favorite dressing",
-        ],
-        description: "Fresh, crisp, and healthy.",
-        cookTime: 5,
-        calories: 150,
-      ),
-      Recipe(id: 9, 
-        title: 'Tuna Salad Sandwich',
-        ingredients: ["Canned Tuna", "Mayonnaise", "Bread", "Celery"],
-        instructions: [
-          "Step 1. Drain tuna and chop celery",
-          "Step 2. Mix tuna, mayo, and celery in a bowl",
-          "Step 3. Serve on your favorite bread",
-        ],
-        description: "A quick, easy, and filling lunch.",
-        cookTime: 10,
-        calories: 400,
-      ),
-      Recipe(id: 10, 
-        title: 'Classic Hot Dog',
-        ingredients: ["Hot Dog", "Bun", "Ketchup", "Mustard"],
-        instructions: [
-          "Step 1. Boil or grill hot dog until heated through",
-          "Step 2. Place in a bun",
-          "Step 3. Add your favorite condiments",
-        ],
-        description: "An American classic for any occasion.",
-        cookTime: 10,
-        calories: 300,
-      ),
-      Recipe(id: 11, 
-        title: 'Mac & Cheese',
-        ingredients: ["Macaroni", "Cheese Sauce", "Milk", "Butter"],
-        instructions: [
-          "Step 1. Boil macaroni as directed on package",
-          "Step 2. Drain macaroni and return to pot",
-          "Step 3. Stir in butter, milk, and cheese sauce",
-        ],
-        description: "Cheesy, creamy goodness that's always a hit.",
-        cookTime: 15,
-        calories: 500,
-      ),
-    ];
+  final List<Recipe> _recipes = [
+    Recipe(
+      id: 1,
+      name: 'Pork Tenderloin',
+      ingredients: [
+        'Pork Tenderloin',
+        'Smoked Paprika',
+        'Minced Garlic',
+        'Salt',
+        'Black Pepper',
+        'Stock or Orange Juice',
+        'Sugar',
+        'Butter'
+      ],
+      instructions:
+          'Rub the tenderloin with Smoked Paprika, Minced Garlic, Salt, Black Pepper, and Marinade Pork for 24 hours. Sear on all sides, then put in an oven until the pork registers 145ºF. Pull pork and make pan sauce with fond, stock/juice, sugar, and pad of butter. Whisk to combine, and serve',
+      cuisine: 'Italian',
+      prepTime: 10,
+      cookTime: 60,
+      calories: 600,
+      dietRestriction: null,
+      servings: 2,
+    ),
+    Recipe(
+      id: 2,
+      name: 'Spaghetti Carbonara',
+      ingredients: ['Pasta', 'Eggs', 'Bacon'],
+      instructions: 'Boil pasta, mix eggs, and combine everything.',
+      cuisine: 'Italian',
+      prepTime: 10,
+      cookTime: 20,
+      calories: 600,
+      dietRestriction: null,
+      servings: 2,
+    ),
+    // … other recipes …
+  ];
+
+  List<Recipe> getRecipes() => List.unmodifiable(_recipes);
+
+  Recipe getRecipeById(int id) =>
+      _recipes.firstWhere((recipe) => recipe.id == id);
+
+  bool updateRecipe(int id, Recipe updatedRecipe) {
+    final index = _recipes.indexWhere((recipe) => recipe.id == id);
+    if (index == -1) return false;
+    _recipes[index] = updatedRecipe;
+    return true;
   }
 
-  Recipe getRecipeById(int id) {
-    // Logic to find and return one recipe from the list above
-    return getRecipes().firstWhere((recipe) => recipe.id == id);
+  bool deleteRecipe(int id) {
+    final initialLength = _recipes.length;
+    _recipes.removeWhere((recipe) => recipe.id == id);
+    return _recipes.length < initialLength;
+  }
+
+  void addRecipe(Recipe recipe) {
+    _recipes.add(recipe);
   }
 }

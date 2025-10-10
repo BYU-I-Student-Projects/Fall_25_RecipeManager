@@ -1,57 +1,56 @@
-// lib/widgets/recipe_list_item.dart
-
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/recipe_model.dart';
 
 class RecipeListItem extends StatelessWidget {
-  final PostgrestMap recipe;
+  final Recipe recipe;
+  final Function(int id, Map<String, dynamic> updates) onUpdate;
+  final Function(int id) onDelete;
 
-  const RecipeListItem({super.key, required this.recipe});
+  const RecipeListItem({
+    super.key,
+    required this.recipe,
+    required this.onUpdate,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       child: ListTile(
-
         leading: CircleAvatar(
           backgroundColor: Theme.of(context).primaryColor,
           child: Text(
-            recipe['name'][0], 
-            style: const TextStyle(color: Colors.white)
-          ), 
+            recipe.name.isNotEmpty ? recipe.name[0] : '?',
+            style: const TextStyle(color: Colors.white),
+          ),
         ),
-
-        title: Text(recipe['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-
+        title: Text(recipe.name,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            Text(
-              recipe['description'],
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            Text(recipe.cuisine),
+            const SizedBox(height: 4),
+            Text(recipe.instructions,
+                maxLines: 2, overflow: TextOverflow.ellipsis),
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.blue),
+              onPressed: () {
+                onUpdate(recipe.id, {'name': '${recipe.name} Updated'});
+              },
             ),
-            
-            Row(
-              children: [
-                const Icon(Icons.timer_outlined, size: 16),
-                const SizedBox(width: 4),
-                Text('${recipe['cook-time']} min'),
-                const SizedBox(width: 12),
-                const Icon(Icons.local_fire_department_outlined, size: 16),
-                const SizedBox(width: 4),
-                Text('${recipe['calories']} kcal'),
-              ],
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: () => onDelete(recipe.id),
             ),
           ],
         ),
-
-        onTap: () {
-          print('Tapped on ${recipe['name']}');
-          // TODO: Navigate to the recipe details screen
-        },
       ),
     );
   }

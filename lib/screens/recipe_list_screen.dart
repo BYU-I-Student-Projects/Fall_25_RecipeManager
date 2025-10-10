@@ -1,8 +1,7 @@
-// lib/screens/recipe_list_screen.dart
-
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/recipe_model.dart';
 import '../widgets/recipe_list_item.dart';
+import '../services/recipe_service.dart';
 
 class RecipeListScreen extends StatefulWidget {
   const RecipeListScreen({super.key});
@@ -12,33 +11,71 @@ class RecipeListScreen extends StatefulWidget {
 }
 
 class _RecipeListScreenState extends State<RecipeListScreen> {
-  // Constructs a query to fetch recipes from the 'recipes' table in Supabase
-  final _future = Supabase.instance.client
-      .from('recipes')
-      .select();
+  late Future<List<Recipe>> _futureRecipes;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecipes();
+  }
+
+  void _loadRecipes() {
+    _futureRecipes = RecipeService().getRecipes();
+  }
+
+  void _updateRecipe(int id, Map<String, dynamic> updates) async {
+    bool success = await RecipeService().updateRecipe(id, updates);
+    if (success) {
+      setState(() => _loadRecipes());
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Recipe updated')));
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Update failed')));
+    }
+  }
+
+  void _deleteRecipe(int id) async {
+    bool success = await RecipeService().deleteRecipe(id);
+    if (success) {
+      setState(() => _loadRecipes());
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Recipe deleted')));
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Delete failed')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: FutureBuilder(
-        future: _future,
+      body: FutureBuilder<List<Recipe>>(
+        future: _futureRecipes,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final recipes = snapshot.data!;
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          final recipes = snapshot.data ?? [];
+
           return SafeArea(
             child: ListView.builder(
               itemCount: recipes.length,
-              itemBuilder: ((context, index) {
-                // Get the specific recipe from the list by its index
+              itemBuilder: (context, index) {
                 final recipe = recipes[index];
-                // Pass the recipe object to list item widget
-                return RecipeListItem(recipe: recipe);
-              }),
+                return RecipeListItem(
+                  recipe: recipe,
+                  onUpdate: _updateRecipe,
+                  onDelete: _deleteRecipe,
+                );
+              },
             ),
           );
-        }
+        },
       ),
     );
   }
