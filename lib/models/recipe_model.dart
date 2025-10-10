@@ -26,7 +26,7 @@ class Recipe {
   });
 
   // Factory constructor to create a Recipe from a Supabase row (Map)
-  factory Recipe.fromJson(Map<String, dynamic> json) {
+  factory Recipe.fromMap(Map<String, dynamic> json) {
     return Recipe(
       id: json['id'],
       title: json['name'] ?? '', // Default to empty string if null
@@ -51,7 +51,7 @@ class Recipe {
 
   // Method to convert a Recipe object back to a Map.
   // Useful for INSERT and UPDATE operations.
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': title,

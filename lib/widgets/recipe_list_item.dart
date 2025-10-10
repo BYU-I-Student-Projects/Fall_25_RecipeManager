@@ -1,7 +1,10 @@
 // lib/widgets/recipe_list_item.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/recipe_model.dart'; // Import your Recipe model
+import '../providers/recipe_provider.dart'; // Import your provider
+import '../screens/recipe_detail_screen.dart'; // Import the detail screen
 
 class RecipeListItem extends StatelessWidget {
   final Recipe recipe;
@@ -44,16 +47,52 @@ class RecipeListItem extends StatelessWidget {
                 const Icon(Icons.local_fire_department_outlined, size: 16),
                 const SizedBox(width: 4),
                 Text('${recipe.calPerServing} kcal'),
+                const SizedBox(width: 12),
+                const Icon(Icons.dinner_dining, size: 16),
+                const SizedBox(width: 4),
+                Text('${recipe.cuisine}'),
               ],
             ),
           ],
         ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.blue),
+              onPressed: (){
+                debugPrint('Edit recipe ${recipe.id}');
+              }, 
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: () async {
+                // Optionally, show a confirmation dialog first.
+                final success = await Provider.of<RecipeProvider>(context, listen: false)
+                    .deleteRecipe(recipe.id);
+
+                // Optionally, show a success/error message.
+                if (success && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${recipe.title} deleted.')),
+                  );
+                }
+              },
+            ),
+          ],
+        
+        ),
 
         onTap: () {
-          print('Tapped on ${recipe.title}');
-          // TODO: Navigate to the recipe details screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RecipeDetailScreen(recipeId: recipe.id),
+            ),
+          );
         },
       ),
+    
     );
   }
 }
