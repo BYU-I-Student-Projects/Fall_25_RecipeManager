@@ -29,7 +29,8 @@ class RecipeListItem extends StatelessWidget {
           children: [
 
             Text(
-              recipe['description'],
+              // recipe['description'],
+              "[Description Placeholder]",
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -38,11 +39,11 @@ class RecipeListItem extends StatelessWidget {
               children: [
                 const Icon(Icons.timer_outlined, size: 16),
                 const SizedBox(width: 4),
-                Text('${recipe['cook-time']} min'),
+                Text('${recipe['cook-time-min']} min'),
                 const SizedBox(width: 12),
                 const Icon(Icons.local_fire_department_outlined, size: 16),
                 const SizedBox(width: 4),
-                Text('${recipe['calories']} kcal'),
+                Text('${recipe['cal-per-serv']} kcal'),
               ],
             ),
           ],
