@@ -13,7 +13,6 @@
 .pub/
 build/
 coverage/
-lib/generated_plugin_registrant.dart
 # Custom rule: Ignore native platform folders for our web-only project.
 /android/
 /ios/

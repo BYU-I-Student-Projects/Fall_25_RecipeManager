@@ -1,9 +1,11 @@
 // lib/screens/main_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:recipe_manager/screens/grocery_list_screen.dart';
 import '/../screens/recipe_list_screen.dart';
-// import 'shopping_list_screen.dart';
-// import 'profile_screen.dart';
+import 'package:recipe_manager/screens/add_recipe.dart';
+import 'package:recipe_manager/screens/calendar_screen.dart';
+import 'package:recipe_manager/screens/user_settings_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -19,12 +21,12 @@ class _MainScreenState extends State<MainScreen> {
   // This is the list of screens/widgets to display for each tab.
   static const List<Widget> _widgetOptions = <Widget>[
     RecipeListScreen(),
-    // TODO: Replace the placeholders below with actual screen widgets
-    Scaffold(body: Center(child: Text('Shopping List Screen'))), 
-    Scaffold(body: Center(child: Text('Create Recipe Screen'))),
-    Scaffold(body: Center(child: Text('Calendar Screen'))),
-    Scaffold(body: Center(child: Text('Settings Screen'))),
-  ];
+    GroceryListScreen(), 
+    AddRecipeScreen(),
+    CalendarScreen(),
+    SettingsScreen(),
+    SettingsScreen(),
+  ]; 
 
   // This function is called when a tab is tapped.
   void _onItemTapped(int index) {
@@ -41,6 +43,7 @@ class _MainScreenState extends State<MainScreen> {
         child: _widgetOptions.elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: const Color(0xFFBAA898),
         type: BottomNavigationBarType.fixed, // Ensures all items are shown
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -65,7 +68,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
         currentIndex: _selectedIndex, // Highlights the correct tab
-        selectedItemColor: Theme.of(context).primaryColor, // Or preferred color
+        selectedItemColor: const Color(0xFFFFFFFF), // Or preferred color
         onTap: _onItemTapped, // Calls when a tab is tapped
       ),
     );
