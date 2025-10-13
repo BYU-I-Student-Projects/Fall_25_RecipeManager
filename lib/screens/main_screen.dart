@@ -1,10 +1,11 @@
 // lib/screens/main_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:recipe_manager/screens/grocery_list_screen.dart';
 import '/../screens/recipe_list_screen.dart';
 import 'package:recipe_manager/screens/add_recipe.dart';
-
-import '/../screens/user_settings_screen.dart';
+import 'package:recipe_manager/screens/calendar_screen.dart';
+import 'package:recipe_manager/screens/user_settings_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -20,10 +21,10 @@ class _MainScreenState extends State<MainScreen> {
   // This is the list of screens/widgets to display for each tab.
   static const List<Widget> _widgetOptions = <Widget>[
     RecipeListScreen(),
-    // TODO: Replace the placeholders below with actual screen widgets
-    Scaffold(body: Center(child: Text('Shopping List Screen'))), 
-    Scaffold(body: Center(child: AddRecipeScreen())),
-    Scaffold(body: Center(child: Text('Calendar Screen'))),
+    GroceryListScreen(), 
+    AddRecipeScreen(),
+    CalendarScreen(),
+    SettingsScreen(),
     SettingsScreen(),
   ]; 
 
