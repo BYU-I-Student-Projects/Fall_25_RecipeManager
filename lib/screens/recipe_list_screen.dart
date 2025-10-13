@@ -1,8 +1,10 @@
 // lib/screens/recipe_list_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import '../providers/recipe_provider.dart';
 import '../widgets/recipe_list_item.dart';
+import '../models/recipe_model.dart';
 
 class RecipeListScreen extends StatefulWidget {
   const RecipeListScreen({super.key});
@@ -12,38 +14,40 @@ class RecipeListScreen extends StatefulWidget {
 }
 
 class _RecipeListScreenState extends State<RecipeListScreen> {
-  // Constructs a query to fetch recipes from the 'recipes' table in Supabase
-  final _future = Supabase.instance.client
-      .from('recipes')
-      .select();
+  @override
+  void initState() {
+    super.initState();
+    // Use a post-frame callback to safely access context
+    // This calls fetchRecipes() right after the first frame is built.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Check to ensure the widget is still on-screen
+      // before attempting to access the context or call the provider.
+      if (mounted) {
+        Provider.of<RecipeProvider>(context, listen: false).fetchRecipes();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Access the provider. The widget will rebuild when notifyListeners is called.
+    final recipeProvider = Provider.of<RecipeProvider>(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFEEE0CB),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF839788),
-        title: const Text('Recipes'),
-      ),
-      body: FutureBuilder(
-        future: _future,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final recipes = snapshot.data!;
-          return SafeArea(
-            child: ListView.builder(
-              itemCount: recipes.length,
-              itemBuilder: ((context, index) {
-                // Get the specific recipe from the list by its index
-                final recipe = recipes[index];
-                // Pass the recipe object to list item widget
-                return RecipeListItem(recipe: recipe);
-              }),
-            ),
-          );
-        }
+      body: SafeArea(
+        // Check the isLoading flag from the provider
+        child: recipeProvider.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView.builder(
+                itemCount: recipeProvider.recipes.length,
+                itemBuilder: ((context, index) {
+                  // Get the specific recipe object from the provider's list
+                  final Recipe recipe = recipeProvider.recipes[index];
+                  
+                  // Pass the Recipe object to your list item widget
+                  return RecipeListItem(recipe: recipe);
+                }),
+              ),
       ),
     );
   }
