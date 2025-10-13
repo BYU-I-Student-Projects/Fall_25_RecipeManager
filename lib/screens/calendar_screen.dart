@@ -17,11 +17,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const Color accent1 = Color(0xFFBAA898);
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: const Color(0xFF839788),
         title: const Text('Calendar'),
       ),
-      body: Column(
+      body: Container(
+        color: const Color(0xFFEEE0CB),
+        child: Column(
         children: [
           TableCalendar(
             firstDay: DateTime.utc(2010, 10, 16),
@@ -35,7 +39,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             onDaySelected: (selectedDay, focusedDay) {
               if (!isSameDay(_selectedDay, selectedDay)) {
                 setState(() {
-                  _selectedDay = selectedDay;
+                  _selectedDay = DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
                   _focusedDay = focusedDay;
                 });
               }
@@ -53,11 +57,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
             // Optional: Customize appearance and behavior
             calendarStyle: const CalendarStyle(
               todayDecoration: BoxDecoration(
-                color: Colors.blueAccent,
+                color: Color(0xFF839788),
                 shape: BoxShape.circle,
               ),
               selectedDecoration: BoxDecoration(
-                color: Colors.deepOrange,
+                color: (accent1),
                 shape: BoxShape.circle,
               ),
             ),
@@ -71,12 +75,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
           Expanded(
             child: Center(
               child: _selectedDay != null
-                  ? Text('Selected day: ${_selectedDay!.toLocal().toString().split(' ')[0]}')
+                  ? Text('Selected day: ${_selectedDay!.year}-${_selectedDay!.month.toString().padLeft(2, '0')}-${_selectedDay!.day.toString().padLeft(2, '0')}')
                   : const Text('No day selected'),
             ),
           ),
         ],
       ),
+    )
     );
   }
 }

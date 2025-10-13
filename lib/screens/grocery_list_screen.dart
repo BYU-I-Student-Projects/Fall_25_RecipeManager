@@ -38,8 +38,9 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFEEE0CB),
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: const Color(0xFF839788),
         title: const Text('My Grocery List'),
       ),
       body: Column(
