@@ -68,9 +68,10 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFEEE0CB),
       appBar: AppBar(
         title: const Text('Add your Personalized Recipe'),
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: const Color(0xFF839788),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -92,7 +93,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               icon: const Icon(Icons.check),
               label: const Text('Add recipe'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
+                backgroundColor: const Color(0xFF839788),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
