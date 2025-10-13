@@ -34,6 +34,11 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
     final recipeProvider = Provider.of<RecipeProvider>(context);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFEEE0CB),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF839788),
+        title: const Text('My Recipes'),
+      ),
       body: SafeArea(
         // Check the isLoading flag from the provider
         child: recipeProvider.isLoading

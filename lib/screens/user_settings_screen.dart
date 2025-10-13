@@ -16,7 +16,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFEEE0CB),
       appBar: AppBar(
+        backgroundColor: const Color(0xFF839788),
         title: Text('Settings'),
       ),
       body: ListView(
