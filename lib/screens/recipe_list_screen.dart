@@ -14,6 +14,8 @@ class RecipeListScreen extends StatefulWidget {
 }
 
 class _RecipeListScreenState extends State<RecipeListScreen> {
+  final _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -26,9 +28,23 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
         Provider.of<RecipeProvider>(context, listen: false).fetchRecipes();
       }
     });
+
+    _scrollController.addListener(_onScroll);
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // Check if we've reached the bottom of the list
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      // Fetch more recipes
+      Provider.of<RecipeProvider>(context, listen: false).fetchMoreRecipes();
+    }
+  }
   Widget build(BuildContext context) {
     // Access the provider. The widget will rebuild when notifyListeners is called.
     final recipeProvider = Provider.of<RecipeProvider>(context);
@@ -44,8 +60,12 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
         child: recipeProvider.isLoading
             ? const Center(child: CircularProgressIndicator())
             : ListView.builder(
-                itemCount: recipeProvider.recipes.length,
+                controller: _scrollController,
+                itemCount: recipeProvider.recipes.length + (recipeProvider.hasMore ? 1 : 0),
                 itemBuilder: ((context, index) {
+                  if (index == recipeProvider.recipes.length) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
                   // Get the specific recipe object from the provider's list
                   final Recipe recipe = recipeProvider.recipes[index];
                   

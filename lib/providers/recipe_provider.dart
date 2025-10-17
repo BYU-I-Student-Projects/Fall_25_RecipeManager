@@ -4,16 +4,18 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/recipe_model.dart'; // Import your model
 
 class RecipeProvider with ChangeNotifier {
-  // Initialize Supabase client
   final _supabase = Supabase.instance.client;
   List<Recipe> _recipes = [];
-
-  // Recipe list state
-  List<Recipe> get recipes => _recipes;
   bool _isLoading = false;
-  bool get isLoading => _isLoading;
+  // Variables for pagination
+  bool _hasMore = true;
+  int _page = 1;
+  final int _limit = 15; // Number of recipes to fetch per page
 
-  // Single recipe detail state
+  List<Recipe> get recipes => _recipes;
+  bool get isLoading => _isLoading;
+  bool get hasMore => _hasMore;
+
   Recipe? _selectedRecipe;
   Recipe? get selectedRecipe => _selectedRecipe;
   bool _isLoadingDetails = false;
@@ -23,21 +25,68 @@ class RecipeProvider with ChangeNotifier {
   Future<void> fetchRecipes() async {
     // Set loading to true and notify listeners
     _isLoading = true;
+    _page = 1; // Reset to first page
+    _hasMore = true;
+    _recipes = []; // Clear existing recipes
     if (hasListeners) {
       notifyListeners();
     }
 
     // Fetch data from the 'recipes' table
     try {
-      final response = await _supabase.from('recipes').select();
+      final response = await _supabase
+          .from('recipes')
+          .select()
+          .range((_page - 1) * _limit, _page * _limit - 1); // Fetch first 15
       final List<dynamic> data = response;
       // Maps the data to a list of Recipe objects
       _recipes = data.map((item) => Recipe.fromMap(item as Map<String, dynamic>)).toList();
+
+      // If we received fewer recipes than the limit, we've reached the end
+      if (data.length < _limit) {
+        _hasMore = false;
+      }
     } catch (error) {
       debugPrint('AN ERROR OCCURRED: $error');
     }
 
     // Set loading to false and notify listeners
+    _isLoading = false;
+    if (hasListeners) {
+      notifyListeners();
+    }
+  }
+
+  // Fetch more recipes for infinite scrolling
+  Future<void> fetchMoreRecipes() async {
+    // Don't fetch if we're already loading or if there are no more recipes
+    if (_isLoading || !_hasMore) return;
+
+    _isLoading = true;
+    _page++; // Go to the next page
+    if (hasListeners) {
+      notifyListeners();
+    }
+    try {
+      final response = await _supabase
+          .from('recipes')
+          .select()
+          .range((_page - 1) * _limit, _page * _limit - 1); // Fetch the next batch
+
+      final List<dynamic> data = response;
+      final newRecipes = data.map((item) => Recipe.fromMap(item as Map<String, dynamic>)).toList();
+      
+      _recipes.addAll(newRecipes); // Add the new recipes to the existing list
+
+      // If we received fewer recipes than the limit, we've reached the end
+      if (newRecipes.length < _limit) {
+        _hasMore = false;
+      }
+
+    } catch (error) {
+      debugPrint('AN ERROR OCCURRED fetching more recipes: $error');
+    }
+
     _isLoading = false;
     if (hasListeners) {
       notifyListeners();
