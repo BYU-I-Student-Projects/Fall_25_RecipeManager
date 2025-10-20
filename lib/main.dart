@@ -1,5 +1,5 @@
 // lib/main.dart
-
+// This is a comment
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:recipe_manager/screens/main_screen.dart';
