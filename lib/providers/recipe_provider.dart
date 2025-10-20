@@ -4,16 +4,20 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/recipe_model.dart'; // Import your model
 
 class RecipeProvider with ChangeNotifier {
-  final _supabase = Supabase.instance.client;
+final _supabase = Supabase.instance.client;
   List<Recipe> _recipes = [];
-  bool _isLoading = false;
-  // Variables for pagination
+  
+  // Use two separate flags for different loading states
+  bool _isLoading = false;      // For the initial, full-screen load
+  bool _isLoadingMore = false;  // For loading more items at the bottom
+
   bool _hasMore = true;
   int _page = 1;
-  final int _limit = 15; // Number of recipes to fetch per page
+  final int _limit = 15;
 
   List<Recipe> get recipes => _recipes;
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore; // Getter for the new flag
   bool get hasMore => _hasMore;
 
   Recipe? _selectedRecipe;
@@ -60,18 +64,31 @@ class RecipeProvider with ChangeNotifier {
   // Fetch more recipes for infinite scrolling
   Future<void> fetchMoreRecipes() async {
     // Don't fetch if we're already loading or if there are no more recipes
-    if (_isLoading || !_hasMore) return;
+    if (_isLoadingMore || !_hasMore) return;
 
-    _isLoading = true;
+    _isLoadingMore = true;
     _page++; // Go to the next page
     if (hasListeners) {
       notifyListeners();
     }
+
+    // Define a minimum display time for the loading indicator
+    const minDisplayTime = Duration(milliseconds: 500);
+    final startTime = DateTime.now();
+
     try {
       final response = await _supabase
           .from('recipes')
           .select()
           .range((_page - 1) * _limit, _page * _limit - 1); // Fetch the next batch
+
+      // Calculate how long the network request took
+      final networkTime = DateTime.now().difference(startTime);
+      
+      // If the request was faster than our minimum, wait the remaining time
+      if (networkTime < minDisplayTime) {
+        await Future.delayed(minDisplayTime - networkTime);
+      }
 
       final List<dynamic> data = response;
       final newRecipes = data.map((item) => Recipe.fromMap(item as Map<String, dynamic>)).toList();
@@ -87,7 +104,7 @@ class RecipeProvider with ChangeNotifier {
       debugPrint('AN ERROR OCCURRED fetching more recipes: $error');
     }
 
-    _isLoading = false;
+    _isLoadingMore = false;
     if (hasListeners) {
       notifyListeners();
     }

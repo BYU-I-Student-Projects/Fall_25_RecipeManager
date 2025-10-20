@@ -39,9 +39,8 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
   }
 
   void _onScroll() {
-    // Check if we've reached the bottom of the list
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-      // Fetch more recipes
+    // A threshold helps trigger the fetch before the user hits the absolute bottom
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       Provider.of<RecipeProvider>(context, listen: false).fetchMoreRecipes();
     }
   }
@@ -57,14 +56,18 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
       ),
       body: SafeArea(
         // Check the isLoading flag from the provider
-        child: recipeProvider.isLoading
+        child: recipeProvider.isLoading && recipeProvider.recipes.isEmpty
             ? const Center(child: CircularProgressIndicator())
             : ListView.builder(
                 controller: _scrollController,
                 itemCount: recipeProvider.recipes.length + (recipeProvider.hasMore ? 1 : 0),
                 itemBuilder: ((context, index) {
+                  // Check if we are at the end of the list
                   if (index == recipeProvider.recipes.length) {
-                    return const Center(child: CircularProgressIndicator());
+                    // Only show the bottom indicator if we're loading more
+                    return recipeProvider.isLoadingMore
+                      ? const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator()))
+                      : const SizedBox.shrink(); // Otherwise, show an empty box
                   }
                   // Get the specific recipe object from the provider's list
                   final Recipe recipe = recipeProvider.recipes[index];
