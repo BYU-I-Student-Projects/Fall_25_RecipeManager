@@ -4,6 +4,9 @@
 ### Node.js ###
 /node_modules/
 
+# Secret keys
+.env
+
 ### Flutter ###
 # Flutter/Dart/Pub related
 **/doc/api/
