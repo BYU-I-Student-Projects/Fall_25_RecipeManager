@@ -49,6 +49,8 @@ class Recipe {
     );
   }
 
+String get name => title; 
+
   // Method to convert a Recipe object back to a Map.
   // Useful for INSERT and UPDATE operations.
   Map<String, dynamic> toMap() {

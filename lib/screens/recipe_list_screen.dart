@@ -1,5 +1,4 @@
 // lib/screens/recipe_list_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/recipe_provider.dart';
@@ -14,14 +13,15 @@ class RecipeListScreen extends StatefulWidget {
 }
 
 class _RecipeListScreenState extends State<RecipeListScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  bool _isSearching = false;
+  String _selectedFilter = 'All';
+
   @override
   void initState() {
     super.initState();
-    // Use a post-frame callback to safely access context
-    // This calls fetchRecipes() right after the first frame is built.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Check to ensure the widget is still on-screen
-      // before attempting to access the context or call the provider.
       if (mounted) {
         Provider.of<RecipeProvider>(context, listen: false).fetchRecipes();
       }
@@ -29,9 +29,119 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Recipe> _filterRecipes(List<Recipe> recipes) {
+    List<Recipe> filtered = recipes;
+
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      filtered = filtered.where((recipe) {
+        final recipeTitle = recipe.title.toLowerCase();
+        final recipeCuisine = recipe.cuisine.toLowerCase();
+        final recipeIngredients = recipe.ingredients.join(' ').toLowerCase();
+        
+        final query = _searchQuery.toLowerCase();
+        
+        // Search in title, cuisine, and ingredients
+        return recipeTitle.contains(query) || 
+               recipeCuisine.contains(query) ||
+               recipeIngredients.contains(query);
+      }).toList();
+    }
+
+    // Apply filter based on cuisine or diet restrictions
+    if (_selectedFilter != 'All') {
+      filtered = filtered.where((recipe) {
+        // Check if the filter matches cuisine or diet restrictions
+        return recipe.cuisine.toLowerCase() == _selectedFilter.toLowerCase() ||
+               recipe.dietRestrictions.toLowerCase() == _selectedFilter.toLowerCase();
+      }).toList();
+    }
+
+    return filtered;
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _isSearching = !_isSearching;
+      if (!_isSearching) {
+        _searchController.clear();
+        _searchQuery = '';
+      }
+    });
+  }
+
+  void _showFilterMenu(BuildContext context) {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    showMenu<String>(
+      context: context,
+      position: position,
+      items: [
+        const PopupMenuItem<String>(
+          value: 'All',
+          child: Text('All Recipes'),
+        ),
+        const PopupMenuDivider(),
+        // Cuisine filters
+        const PopupMenuItem<String>(
+          value: 'American',
+          child: Text('American'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'Chinese',
+          child: Text('Chinese'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'French',
+          child: Text('French'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'Italian',
+          child: Text('Italian'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'Indian',
+          child: Text('Indian'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'Greek',
+          child: Text('Greek'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'Mexican',
+          child: Text('Mexican'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'Thai',
+          child: Text('Thai'),
+        ),
+      ],
+    ).then((value) {
+      if (value != null) {
+        setState(() {
+          _selectedFilter = value;
+        });
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Access the provider. The widget will rebuild when notifyListeners is called.
     final recipeProvider = Provider.of<RecipeProvider>(context);
+    final filteredRecipes = _filterRecipes(recipeProvider.recipes);
 
     return Scaffold(
       backgroundColor: const Color(0xFFEEE0CB),
@@ -40,18 +150,127 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
         title: const Text('My Recipes'),
       ),
       body: SafeArea(
-        // Check the isLoading flag from the provider
         child: recipeProvider.isLoading
             ? const Center(child: CircularProgressIndicator())
-            : ListView.builder(
-                itemCount: recipeProvider.recipes.length,
-                itemBuilder: ((context, index) {
-                  // Get the specific recipe object from the provider's list
-                  final Recipe recipe = recipeProvider.recipes[index];
-                  
-                  // Pass the Recipe object to your list item widget
-                  return RecipeListItem(recipe: recipe);
-                }),
+            : Column(
+                children: [
+                  // Search Icon/Bar and Filter Icon
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      child: _isSearching
+                          ? TextField(
+                              controller: _searchController,
+                              autofocus: true,
+                              decoration: InputDecoration(
+                                hintText: 'Search recipes...',
+                                prefixIcon: const Icon(Icons.search),
+                                suffixIcon: IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: _toggleSearch,
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  _searchQuery = value;
+                                });
+                              },
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                // Search Icon
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.search,
+                                    size: 28,
+                                    color: Color(0xFF839788),
+                                  ),
+                                  onPressed: _toggleSearch,
+                                ),
+                                const SizedBox(width: 8),
+                                // Filter Icon
+                                Builder(
+                                  builder: (context) => Stack(
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.filter_list,
+                                          size: 28,
+                                          color: Color(0xFF839788),
+                                        ),
+                                        onPressed: () => _showFilterMenu(context),
+                                      ),
+                                      if (_selectedFilter != 'All')
+                                        Positioned(
+                                          right: 8,
+                                          top: 8,
+                                          child: Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: const BoxDecoration(
+                                              color: Colors.red,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                  // Active Filter Chip
+                  if (_selectedFilter != 'All')
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        children: [
+                          Chip(
+                            label: Text(_selectedFilter),
+                            deleteIcon: const Icon(Icons.close, size: 18),
+                            onDeleted: () {
+                              setState(() {
+                                _selectedFilter = 'All';
+                              });
+                            },
+                            backgroundColor: const Color(0xFF839788),
+                            labelStyle: const TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                  // Recipe List
+                  Expanded(
+                    child: filteredRecipes.isEmpty
+                        ? Center(
+                            child: Text(
+                              _searchQuery.isEmpty && _selectedFilter == 'All'
+                                  ? 'No recipes yet'
+                                  : 'No recipes found',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: filteredRecipes.length,
+                            itemBuilder: ((context, index) {
+                              final Recipe recipe = filteredRecipes[index];
+                              return RecipeListItem(recipe: recipe);
+                            }),
+                          ),
+                  ),
+                ],
               ),
       ),
     );
