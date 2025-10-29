@@ -19,10 +19,10 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   @override
   void initState() {
     super.initState();
-    // Verificar si el usuario está logueado
+    // it verify if the user is logged
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
-      // Si no hay usuario, redirigir al login
+      // if it's not, it send the user to the log in page
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).pushReplacementNamed('/login');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -82,7 +82,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           })
           .select(); // opcional: devuelve la fila insertada
 
-      // Limpiar campos
+      // clean fields
       _instructionsController.clear();
       _ingredientsController.clear();
       _prepTimeController.clear();
@@ -98,7 +98,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       );
     }
   }
-
+// UI Section - add recipe
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -138,7 +138,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       ),
     );
   }
-
+// function to build quicker the textfields
   Widget _buildTextField(TextEditingController controller, String label,
       {int maxLines = 1}) {
     return TextField(
