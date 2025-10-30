@@ -5,7 +5,7 @@ ALTER TABLE public.recipes DISABLE ROW LEVEL SECURITY;
 -- 2. Insert dummy recipes
 --    (Add as many as you want)
 INSERT INTO public.recipes
-  (name, pre-time-min, cook-time-min, instructions, cal_per_serv, cuisine, ingredients, servings, diet_restric)
+  (name, "pre-time-min", "cook-time-min", instructions, cal_per_serv, cuisine, ingredients, servings, diet_restric)
 VALUES
   (
     'Classic Scrambled Eggs',
@@ -17,7 +17,7 @@ VALUES
     'Eggs, Milk, Butter, Salt, Pepper',
     '2 servings',
     'Gluten-Free, Vegetarian, Keto'
-  ),
+  );
   
 -- 3. (Optional) Insert dummy ingredients
 -- ALTER TABLE public.ingredients DISABLE ROW LEVEL SECURITY;
