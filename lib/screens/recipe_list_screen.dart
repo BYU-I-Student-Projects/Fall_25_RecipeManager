@@ -44,6 +44,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
       Provider.of<RecipeProvider>(context, listen: false).fetchMoreRecipes();
     }
   }
+  @override
   Widget build(BuildContext context) {
     // Access the provider. The widget will rebuild when notifyListeners is called.
     final recipeProvider = Provider.of<RecipeProvider>(context);

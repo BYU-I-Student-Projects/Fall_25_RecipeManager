@@ -5,7 +5,7 @@ import 'main_screen.dart';
 import 'user_signup.dart';
 
 class UserLogin extends StatefulWidget {
-  const UserLogin({Key? key}) : super(key: key);
+  const UserLogin({super.key});
 
   @override
   State<UserLogin> createState() => _UserLoginState();

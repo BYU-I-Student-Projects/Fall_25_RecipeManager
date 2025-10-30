@@ -45,12 +45,12 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     }
 
     // supabase section
-    print('recipe added');
-    print('Instructions: $instructions');
-    print('Ingredients: $ingredients');
-    print('Prep time: $prepTime');
-    print('Cook time: $cookTime');
-    print('Calories: $calories');
+    debugPrint('recipe added');
+    debugPrint('Instructions: $instructions');
+    debugPrint('Ingredients: $ingredients');
+    debugPrint('Prep time: $prepTime');
+    debugPrint('Cook time: $cookTime');
+    debugPrint('Calories: $calories');
 
     // clean fields
     _instructionsController.clear();

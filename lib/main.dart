@@ -1,15 +1,15 @@
 // lib/main.dart
 
-
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:recipe_manager/screens/main_screen.dart';
-import 'screens/user_login.dart';
-import 'screens/main_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/recipe_provider.dart';
+
+final prodSupabaseURL = 'https://uzojyrjxuhigisfvwxni.supabase.co';
+final prodSupabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6b2p5cmp4dWhpZ2lzZnZ3eG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1MjUyMTYsImV4cCI6MjA3NTEwMTIxNn0.vRbrEM5IccOdGUYX8MidpyPbnZs8gW5AZ0iFh44hxS4';
 
 Future<void> main() async {
   // Makes sure that all the widgets are initialized before running the app
@@ -21,10 +21,10 @@ Future<void> main() async {
   // Use kDebugMode to decide which keys to load
   final supabaseUrl = kDebugMode
       ? dotenv.env['LOCAL_SUPABASE_URL']!
-      : dotenv.env['PROD_SUPABASE_URL']!;
+      : prodSupabaseURL;
   final supabaseAnonKey = kDebugMode
       ? dotenv.env['LOCAL_SUPABASE_ANON_KEY']!
-      : dotenv.env['PROD_SUPABASE_ANON_KEY']!;
+      : prodSupabaseAnonKey;
   
   // Initialize Supabase
   await Supabase.initialize(

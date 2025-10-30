@@ -48,7 +48,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                       ),
                       // Display your recipe details here
                       Text(recipeProvider.selectedRecipe!.ingredients.join('\n')),
-                      // TODO: Add more details like instructions, prep time, etc.
                     ],
                   ),
                 ),

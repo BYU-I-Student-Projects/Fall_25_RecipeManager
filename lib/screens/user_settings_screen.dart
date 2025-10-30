@@ -83,6 +83,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 // Example of a separate screen for notification settings
 class NotificationSettingsScreen extends StatelessWidget {
+  const NotificationSettingsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

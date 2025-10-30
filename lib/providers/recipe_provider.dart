@@ -123,7 +123,7 @@ final _supabase = Supabase.instance.client;
       // Store the fetched recipe
       _selectedRecipe = Recipe.fromMap(response);
     } on PostgrestException catch (e) {
-      print('🚨 Error fetching recipe by ID: ${e.message}');
+      debugPrint('🚨 Error fetching recipe by ID: ${e.message}');
       // Handle the error, maybe set an error state
     } finally {
       _isLoadingDetails = false;
@@ -147,7 +147,7 @@ final _supabase = Supabase.instance.client;
 
       return true;
     } on PostgrestException catch (e) {
-      print('🚨 Error adding recipe: ${e.message}');
+      debugPrint('🚨 Error adding recipe: ${e.message}');
       return false;
     }
   }
@@ -171,7 +171,7 @@ final _supabase = Supabase.instance.client;
 
       return true;
     } on PostgrestException catch (e) {
-      print('🚨 Error updating recipe: ${e.message}');
+      debugPrint('🚨 Error updating recipe: ${e.message}');
       return false;
     }
   }
@@ -187,7 +187,7 @@ final _supabase = Supabase.instance.client;
 
       return true;
     } on PostgrestException catch (e) {
-      print('🚨 Error deleting recipe: ${e.message}');
+      debugPrint('🚨 Error deleting recipe: ${e.message}');
       return false;
     }
   }
