@@ -14,7 +14,6 @@ import '../providers/recipe_provider.dart';
 Future<void> main() async {
   // Makes sure that all the widgets are initialized before running the app
   WidgetsFlutterBinding.ensureInitialized();
-    final session = Supabase.instance.client.auth.currentSession; // NEW
 
   // Load the .env file
   await dotenv.load(fileName: ".env");
@@ -32,6 +31,8 @@ Future<void> main() async {
     url: supabaseUrl,
     anonKey: supabaseAnonKey,
   );
+
+  final session = Supabase.instance.client.auth.currentSession; // NEW
 
   runApp(const MyApp());
 }
