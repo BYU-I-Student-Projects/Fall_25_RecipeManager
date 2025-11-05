@@ -1,11 +1,13 @@
 // lib/screens/main_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; 
 import 'package:recipe_manager/screens/grocery_list_screen.dart';
 import '/../screens/recipe_list_screen.dart';
 import 'package:recipe_manager/screens/add_recipe.dart';
 import 'package:recipe_manager/screens/calendar_screen.dart';
 import 'package:recipe_manager/screens/user_settings_screen.dart';
+import 'user_login.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -35,9 +37,33 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+// logout function
+  Future<void> _logout() async {
+    await Supabase.instance.client.auth.signOut();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const UserLogin()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
     return Scaffold(
+      // logout function
+      appBar: AppBar( // ✅ NEW
+      backgroundColor: const Color(0xFFBAA898),
+      title: Text('Welcome, ${user?.email ?? "User"}'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.logout),
+          tooltip: 'Logout',
+          onPressed: _logout, // ✅ Calls the logout function above
+      ),
+    ],
+  ),
       // Display the widget from our list based on the selected index.
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),

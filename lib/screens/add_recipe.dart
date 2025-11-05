@@ -61,6 +61,13 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       return;
     }
 
+    // supabase section
+    debugPrint('recipe added');
+    debugPrint('Instructions: $instructions');
+    debugPrint('Ingredients: $ingredients');
+    debugPrint('Prep time: $prepTime');
+    debugPrint('Cook time: $cookTime');
+    debugPrint('Calories: $calories');
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) {
