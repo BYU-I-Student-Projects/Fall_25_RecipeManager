@@ -161,11 +161,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
         title: const Text('My Recipes'),
       ),
       body: SafeArea(
-<<<<<<< Updated upstream
         child: recipeProvider.isLoading
-=======
-        child: recipeProvider.isLoading && recipeProvider.recipes.isEmpty
->>>>>>> Stashed changes
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
