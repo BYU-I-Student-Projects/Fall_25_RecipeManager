@@ -161,7 +161,11 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
         title: const Text('My Recipes'),
       ),
       body: SafeArea(
+<<<<<<< Updated upstream
         child: recipeProvider.isLoading
+=======
+        child: recipeProvider.isLoading && recipeProvider.recipes.isEmpty
+>>>>>>> Stashed changes
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
@@ -274,8 +278,21 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                             ),
                           )
                         : ListView.builder(
-                            itemCount: filteredRecipes.length,
+                            controller: _scrollController,
+                            itemCount: filteredRecipes.length + (recipeProvider.hasMore ? 1 : 0),
                             itemBuilder: ((context, index) {
+                              // Check if we are at the end of the list
+                              if (index == filteredRecipes.length) {
+                                // Only show the bottom indicator if we're loading more
+                                return recipeProvider.isLoadingMore
+                                    ? const Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.all(16.0),
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      )
+                                    : const SizedBox.shrink();
+                              }
                               final Recipe recipe = filteredRecipes[index];
                               return RecipeListItem(recipe: recipe);
                             }),
