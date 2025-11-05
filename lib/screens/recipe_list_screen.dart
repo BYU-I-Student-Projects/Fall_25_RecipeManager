@@ -17,7 +17,8 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   bool _isSearching = false;
-  String _selectedFilter = 'All';
+  String _selectedCuisineFilter = 'All';
+  String _selectedMealTypeFilter = 'All';
 
   @override
   void initState() {
@@ -39,7 +40,6 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
   }
 
   void _onScroll() {
-    // A threshold helps trigger the fetch before the user hits the absolute bottom
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       Provider.of<RecipeProvider>(context, listen: false).fetchMoreRecipes();
     }
@@ -54,22 +54,28 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
         final recipeTitle = recipe.title.toLowerCase();
         final recipeCuisine = recipe.cuisine.toLowerCase();
         final recipeIngredients = recipe.ingredients.join(' ').toLowerCase();
-        
         final query = _searchQuery.toLowerCase();
         
-        // Search in title, cuisine, and ingredients
         return recipeTitle.contains(query) || 
                recipeCuisine.contains(query) ||
                recipeIngredients.contains(query);
       }).toList();
     }
 
-    // Apply filter based on cuisine or diet restrictions
-    if (_selectedFilter != 'All') {
+    // Apply cuisine filter
+    if (_selectedCuisineFilter != 'All') {
       filtered = filtered.where((recipe) {
-        // Check if the filter matches cuisine or diet restrictions
-        return recipe.cuisine.toLowerCase() == _selectedFilter.toLowerCase() ||
-               recipe.dietRestrictions.toLowerCase() == _selectedFilter.toLowerCase();
+        return recipe.cuisine.toLowerCase() == _selectedCuisineFilter.toLowerCase() ||
+               recipe.dietRestrictions.toLowerCase() == _selectedCuisineFilter.toLowerCase();
+      }).toList();
+    }
+
+    // Apply meal type filter
+    if (_selectedMealTypeFilter != 'All') {
+      filtered = filtered.where((recipe) {
+        return recipe.mealTypes.any((mealType) => 
+          mealType.toLowerCase() == _selectedMealTypeFilter.toLowerCase()
+        );
       }).toList();
     }
 
@@ -86,7 +92,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
     });
   }
 
-  void _showFilterMenu(BuildContext context) {
+  void _showCuisineFilterMenu(BuildContext context) {
     final RenderBox button = context.findRenderObject() as RenderBox;
     final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
     final RelativeRect position = RelativeRect.fromRect(
@@ -103,10 +109,9 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
       items: [
         const PopupMenuItem<String>(
           value: 'All',
-          child: Text('All Recipes'),
+          child: Text('All Cuisines'),
         ),
         const PopupMenuDivider(),
-        // Cuisine filters
         const PopupMenuItem<String>(
           value: 'American',
           child: Text('American'),
@@ -143,7 +148,61 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
     ).then((value) {
       if (value != null) {
         setState(() {
-          _selectedFilter = value;
+          _selectedCuisineFilter = value;
+        });
+      }
+    });
+  }
+
+  void _showMealTypeFilterMenu(BuildContext context) {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    showMenu<String>(
+      context: context,
+      position: position,
+      items: [
+        const PopupMenuItem<String>(
+          value: 'All',
+          child: Text('All Meal Types'),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem<String>(
+          value: 'Breakfast',
+          child: Text('Breakfast'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'Brunch',
+          child: Text('Brunch'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'Lunch',
+          child: Text('Lunch'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'Dinner',
+          child: Text('Dinner'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'Snack',
+          child: Text('Snack'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'Dessert',
+          child: Text('Dessert'),
+        ),
+      ],
+    ).then((value) {
+      if (value != null) {
+        setState(() {
+          _selectedMealTypeFilter = value;
         });
       }
     });
@@ -161,11 +220,11 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
         title: const Text('My Recipes'),
       ),
       body: SafeArea(
-        child: recipeProvider.isLoading
+        child: recipeProvider.isLoading && recipeProvider.recipes.isEmpty
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
-                  // Search Icon/Bar and Filter Icon
+                  // Search Bar and Filter Icons
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: AnimatedContainer(
@@ -207,7 +266,36 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                                   onPressed: _toggleSearch,
                                 ),
                                 const SizedBox(width: 8),
-                                // Filter Icon
+                                // Meal Type Filter Icon
+                                Builder(
+                                  builder: (context) => Stack(
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.restaurant_menu,
+                                          size: 28,
+                                          color: Color(0xFF839788),
+                                        ),
+                                        onPressed: () => _showMealTypeFilterMenu(context),
+                                      ),
+                                      if (_selectedMealTypeFilter != 'All')
+                                        Positioned(
+                                          right: 8,
+                                          top: 8,
+                                          child: Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: const BoxDecoration(
+                                              color: Colors.red,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Cuisine Filter Icon
                                 Builder(
                                   builder: (context) => Stack(
                                     children: [
@@ -217,9 +305,9 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                                           size: 28,
                                           color: Color(0xFF839788),
                                         ),
-                                        onPressed: () => _showFilterMenu(context),
+                                        onPressed: () => _showCuisineFilterMenu(context),
                                       ),
-                                      if (_selectedFilter != 'All')
+                                      if (_selectedCuisineFilter != 'All')
                                         Positioned(
                                           right: 8,
                                           top: 8,
@@ -239,23 +327,37 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                             ),
                     ),
                   ),
-                  // Active Filter Chip
-                  if (_selectedFilter != 'All')
+                  // Active Filter Chips
+                  if (_selectedCuisineFilter != 'All' || _selectedMealTypeFilter != 'All')
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Row(
+                      child: Wrap(
+                        spacing: 8.0,
                         children: [
-                          Chip(
-                            label: Text(_selectedFilter),
-                            deleteIcon: const Icon(Icons.close, size: 18),
-                            onDeleted: () {
-                              setState(() {
-                                _selectedFilter = 'All';
-                              });
-                            },
-                            backgroundColor: const Color(0xFF839788),
-                            labelStyle: const TextStyle(color: Colors.white),
-                          ),
+                          if (_selectedMealTypeFilter != 'All')
+                            Chip(
+                              label: Text(_selectedMealTypeFilter),
+                              deleteIcon: const Icon(Icons.close, size: 18),
+                              onDeleted: () {
+                                setState(() {
+                                  _selectedMealTypeFilter = 'All';
+                                });
+                              },
+                              backgroundColor: const Color(0xFF839788),
+                              labelStyle: const TextStyle(color: Colors.white),
+                            ),
+                          if (_selectedCuisineFilter != 'All')
+                            Chip(
+                              label: Text(_selectedCuisineFilter),
+                              deleteIcon: const Icon(Icons.close, size: 18),
+                              onDeleted: () {
+                                setState(() {
+                                  _selectedCuisineFilter = 'All';
+                                });
+                              },
+                              backgroundColor: const Color(0xFF839788),
+                              labelStyle: const TextStyle(color: Colors.white),
+                            ),
                         ],
                       ),
                     ),
@@ -264,7 +366,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                     child: filteredRecipes.isEmpty
                         ? Center(
                             child: Text(
-                              _searchQuery.isEmpty && _selectedFilter == 'All'
+                              _searchQuery.isEmpty && _selectedCuisineFilter == 'All' && _selectedMealTypeFilter == 'All'
                                   ? 'No recipes yet'
                                   : 'No recipes found',
                               style: const TextStyle(
@@ -275,11 +377,10 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                           )
                         : ListView.builder(
                             controller: _scrollController,
-                            itemCount: filteredRecipes.length + (recipeProvider.hasMore ? 1 : 0),
+                            itemCount: filteredRecipes.length + (recipeProvider.hasMore && _searchQuery.isEmpty && _selectedCuisineFilter == 'All' && _selectedMealTypeFilter == 'All' ? 1 : 0),
                             itemBuilder: ((context, index) {
-                              // Check if we are at the end of the list
+                              // Show loading indicator at the bottom only when not filtering
                               if (index == filteredRecipes.length) {
-                                // Only show the bottom indicator if we're loading more
                                 return recipeProvider.isLoadingMore
                                     ? const Center(
                                         child: Padding(
