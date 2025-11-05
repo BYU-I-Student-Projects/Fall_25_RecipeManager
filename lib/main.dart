@@ -1,7 +1,5 @@
 // lib/main.dart
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:recipe_manager/screens/main_screen.dart';
@@ -15,16 +13,9 @@ Future<void> main() async {
   // Makes sure that all the widgets are initialized before running the app
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load the .env file
-  await dotenv.load(fileName: ".env");
-
   // Use kDebugMode to decide which keys to load
-  final supabaseUrl = kDebugMode
-      ? dotenv.env['LOCAL_SUPABASE_URL']!
-      : prodSupabaseURL;
-  final supabaseAnonKey = kDebugMode
-      ? dotenv.env['LOCAL_SUPABASE_ANON_KEY']!
-      : prodSupabaseAnonKey;
+  final supabaseUrl = prodSupabaseURL;
+  final supabaseAnonKey = prodSupabaseAnonKey;
   
   // Initialize Supabase
   await Supabase.initialize(
