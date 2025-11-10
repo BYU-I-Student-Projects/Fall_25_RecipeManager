@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/recipe_model.dart';
 import '../providers/recipe_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddRecipeScreen extends StatefulWidget {
   final Recipe? recipeToEdit;
@@ -97,6 +98,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
         calPerServing: parsedCalories,
         cuisine: existing.cuisine,
         dietRestrictions: existing.dietRestrictions,
+        mealTypes: existing.mealTypes,
       );
 
       final success = await recipeProvider.updateRecipe(updatedRecipe);
@@ -132,12 +134,13 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       final response = await Supabase.instance.client
           .from('recipes')
           .insert({
-            'user_id': user.id,
+            'user_uuid': user.id,
+            'name': '[placeholder recipe name]',
             'instructions': instructions,
             'ingredients': ingredients,
-            'prep_time': int.parse(prepTime),
-            'cook_time': int.parse(cookTime),
-            'calories': int.parse(calories),
+            'pre-time-min': int.parse(prepTime),
+            'cook-time-min': int.parse(cookTime),
+            'cal_per_serv': int.parse(calories),
           })
           .select(); // opcional: devuelve la fila insertada
 
