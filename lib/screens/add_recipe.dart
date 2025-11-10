@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/recipe_model.dart';
 import '../providers/recipe_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddRecipeScreen extends StatefulWidget {
   final Recipe? recipeToEdit;
@@ -64,103 +63,54 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       );
       return;
     }
+    //     required this.id,
+    //required this.title,
+    //required this.ingredients, 
+    //required this.instructions,
+    //required this.prepTime, 
+    //required this.cookTime, 
+    //required this.servings,
+    //required this.calPerServing,
+    //required this.cuisine,
+    //required this.dietRestrictions,
+    //required this.mealTypes, 
+    final newRecipe = Recipe(
+      // You'll need to add a Title field to your form
+      title: 'New Recipe Title', // e.g., _titleController.text.trim()
+      instructions: instructions.toString().split('\n'),
+      ingredients: ingredients.toString().split('\n'),
+      prepTime: int.parse(prepTime), // Add try-catch for int.parse
+      cookTime: int.parse(cookTime),
+      servings: 1, // Default value; you can add a field for this
+      calPerServing: int.parse(calories),
+      cuisine: 'Unknown', // Default value; you can add a field for this
+      dietRestrictions: 'None', // Default value; you can add a field for this
+      mealTypes: ['Other'], // Default value; you can add a field for this
+    );
 
-    // parse numeric values
-    final parsedPrep = int.tryParse(prepTime) ?? 0;
-    final parsedCook = int.tryParse(cookTime) ?? 0;
-    final parsedCalories = int.tryParse(calories) ?? 0;
+    final provider = Provider.of<RecipeProvider>(context, listen: false);
+    final bool success = await provider.addRecipe(newRecipe);
 
-    // split lines or commas into list items, trimming empty space
-    List<String> _splitToList(String input) {
-      return input
-          .split(RegExp(r'\r?\n|,'))
-          .map((s) => s.trim())
-          .where((s) => s.isNotEmpty)
-          .toList();
-    }
-
-    final ingredientsList = _splitToList(ingredients);
-    final instructionsList = _splitToList(instructions);
-
-    final recipeProvider = Provider.of<RecipeProvider>(context, listen: false);
-
-    // if you are updating an existing recipe, call updateRecipe with a recipe created from the existing recipe
-    if (widget.recipeToEdit != null) {
-      final existing = widget.recipeToEdit!;
-      final updatedRecipe = Recipe(
-        id: existing.id,
-        title: existing.title,
-        ingredients: ingredientsList,
-        instructions: instructionsList,
-        prepTime: parsedPrep,
-        cookTime: parsedCook,
-        servings: existing.servings,
-        calPerServing: parsedCalories,
-        cuisine: existing.cuisine,
-        dietRestrictions: existing.dietRestrictions,
-        mealTypes: existing.mealTypes,
-      );
-
-      final success = await recipeProvider.updateRecipe(updatedRecipe);
-      if (success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar (
-          const SnackBar(content: Text('Recipe updated. ')),
-        );
-        Navigator.of(context).pop(); // close the edit screen
-      } else if (context.mounted) {
+    if (mounted) { // Good practice: check if widget is still visible
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update recipe. ')),
+          const SnackBar(content: Text('Recipe added successfully!')),
+        );
+        // Clear fields
+        _instructionsController.clear();
+        _ingredientsController.clear();
+        _prepTimeController.clear();
+        _cookTimeController.clear();
+        _caloriesController.clear();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error adding recipe. Please try again.')),
         );
       }
-      return;
-    }
-
-    // supabase section
-    debugPrint('recipe added');
-    debugPrint('Instructions: $instructions');
-    debugPrint('Ingredients: $ingredients');
-    debugPrint('Prep time: $prepTime');
-    debugPrint('Cook time: $cookTime');
-    debugPrint('Calories: $calories');
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User not logged in')),
-        );
-        return;
-      }
-
-      final response = await Supabase.instance.client
-          .from('recipes')
-          .insert({
-            'user_uuid': user.id,
-            'name': '[placeholder recipe name]',
-            'instructions': instructions,
-            'ingredients': ingredients,
-            'pre-time-min': int.parse(prepTime),
-            'cook-time-min': int.parse(cookTime),
-            'cal_per_serv': int.parse(calories),
-          })
-          .select(); // opcional: devuelve la fila insertada
-
-      // clean fields
-      _instructionsController.clear();
-      _ingredientsController.clear();
-      _prepTimeController.clear();
-      _cookTimeController.clear();
-      _caloriesController.clear();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Recipe added successfully!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding recipe: $e')),
-      );
     }
   }
-// UI Section - add recipe
+
+  // UI Section - add recipe
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.recipeToEdit != null;
