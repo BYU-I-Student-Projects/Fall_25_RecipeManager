@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/recipe_model.dart';
+import '../providers/recipe_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddRecipeScreen extends StatefulWidget {
-  const AddRecipeScreen({super.key});
+  final Recipe? recipeToEdit;
+
+  const AddRecipeScreen({super.key, this.recipeToEdit});
 
   @override
   State<AddRecipeScreen> createState() => _AddRecipeScreenState();
@@ -18,20 +23,20 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
 
   @override
   void initState() {
-    super.initState();
-    // it verify if the user is logged
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) {
-      // if it's not, it send the user to the log in page
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushReplacementNamed('/login');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please log in first')),
-        );
-      });
+    super.initState(); 
+    // If a recipe was passed in, prefill the controllers for editing
+    final recipe = widget.recipeToEdit;
+    if (recipe != null) {
+      //show lists on seperate lines for ease of editing
+      _instructionsController.text = recipe.instructions.join('\n');
+      _ingredientsController.text = recipe.ingredients.join('\n');
+      _prepTimeController.text = recipe.prepTime.toString();
+      _cookTimeController.text = recipe.cookTime.toString();
+      _caloriesController.text = recipe.calPerServing.toString();
     }
   }
 
+  // free memory
   @override
   void dispose() {
     _instructionsController.dispose();
@@ -42,8 +47,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     super.dispose();
   }
 
-  // submit recipe to Supabase
-  void _submitRecipe() async {
+  Future<void> _submitRecipe() async {
     final instructions = _instructionsController.text.trim();
     final ingredients = _ingredientsController.text.trim();
     final prepTime = _prepTimeController.text.trim();
@@ -58,6 +62,56 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all fields')),
       );
+      return;
+    }
+
+    // parse numeric values
+    final parsedPrep = int.tryParse(prepTime) ?? 0;
+    final parsedCook = int.tryParse(cookTime) ?? 0;
+    final parsedCalories = int.tryParse(calories) ?? 0;
+
+    // split lines or commas into list items, trimming empty space
+    List<String> _splitToList(String input) {
+      return input
+          .split(RegExp(r'\r?\n|,'))
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+    }
+
+    final ingredientsList = _splitToList(ingredients);
+    final instructionsList = _splitToList(instructions);
+
+    final recipeProvider = Provider.of<RecipeProvider>(context, listen: false);
+
+    // if you are updating an existing recipe, call updateRecipe with a recipe created from the existing recipe
+    if (widget.recipeToEdit != null) {
+      final existing = widget.recipeToEdit!;
+      final updatedRecipe = Recipe(
+        id: existing.id,
+        title: existing.title,
+        ingredients: ingredientsList,
+        instructions: instructionsList,
+        prepTime: parsedPrep,
+        cookTime: parsedCook,
+        servings: existing.servings,
+        calPerServing: parsedCalories,
+        cuisine: existing.cuisine,
+        dietRestrictions: existing.dietRestrictions,
+        mealTypes: existing.mealTypes,
+      );
+
+      final success = await recipeProvider.updateRecipe(updatedRecipe);
+      if (success && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar (
+          const SnackBar(content: Text('Recipe updated. ')),
+        );
+        Navigator.of(context).pop(); // close the edit screen
+      } else if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update recipe. ')),
+        );
+      }
       return;
     }
 
@@ -80,12 +134,13 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       final response = await Supabase.instance.client
           .from('recipes')
           .insert({
-            'user_id': user.id,
+            'user_uuid': user.id,
+            'name': '[placeholder recipe name]',
             'instructions': instructions,
             'ingredients': ingredients,
-            'prep_time': int.parse(prepTime),
-            'cook_time': int.parse(cookTime),
-            'calories': int.parse(calories),
+            'pre-time-min': int.parse(prepTime),
+            'cook-time-min': int.parse(cookTime),
+            'cal_per_serv': int.parse(calories),
           })
           .select(); // opcional: devuelve la fila insertada
 
@@ -108,10 +163,11 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
 // UI Section - add recipe
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.recipeToEdit != null;
     return Scaffold(
       backgroundColor: const Color(0xFFEEE0CB),
       appBar: AppBar(
-        title: const Text('Add your Personalized Recipe'),
+        title: Text(isEditing ? 'Edit Recipe' : 'Add your Personalized Recipe'),
         backgroundColor: const Color(0xFF839788),
       ),
       body: SingleChildScrollView(
@@ -131,8 +187,8 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _submitRecipe,
-              icon: const Icon(Icons.check),
-              label: const Text('Add recipe'),
+              icon: Icon(isEditing ? Icons.save : Icons.check),
+              label: Text(isEditing ? 'Update recipe' : 'Add recipe'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF839788),
                 foregroundColor: Colors.white,
