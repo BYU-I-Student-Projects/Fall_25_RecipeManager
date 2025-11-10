@@ -51,7 +51,7 @@ class RecipeListItem extends StatelessWidget {
                 const SizedBox(width: 12),
                 const Icon(Icons.dinner_dining, size: 16),
                 const SizedBox(width: 4),
-                Text('${recipe.cuisine}'),
+                Text(recipe.cuisine),
               ],
             ),
           ],

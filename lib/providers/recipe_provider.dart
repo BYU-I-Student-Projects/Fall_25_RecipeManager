@@ -1,44 +1,105 @@
 // lib/providers/recipe_provider.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/recipe_model.dart'; // Import your model
+import '../models/recipe_model.dart';
 
 class RecipeProvider with ChangeNotifier {
-  // Initialize Supabase client
-  final _supabase = Supabase.instance.client;
+final _supabase = Supabase.instance.client;
   List<Recipe> _recipes = [];
+  
+  // Use two separate flags for different loading states
+  bool _isLoading = false;      // For the initial, full-screen load
+  bool _isLoadingMore = false;  // For loading more items at the bottom
 
-  // Recipe list state
+  bool _hasMore = true;
+  int _page = 1;
+  final int _limit = 15;
+
   List<Recipe> get recipes => _recipes;
-  bool _isLoading = false;
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore; // Getter for the new flag
+  bool get hasMore => _hasMore;
 
-  // Single recipe detail state
   Recipe? _selectedRecipe;
   Recipe? get selectedRecipe => _selectedRecipe;
   bool _isLoadingDetails = false;
   bool get isLoadingDetails => _isLoadingDetails;
 
-  // Fetch all recipes from Supabase
   Future<void> fetchRecipes() async {
-    // Set loading to true and notify listeners
     _isLoading = true;
+    _page = 1; // Reset to first page
+    _hasMore = true;
+    _recipes = []; // Clear existing recipes
     if (hasListeners) {
       notifyListeners();
     }
 
-    // Fetch data from the 'recipes' table
     try {
-      final response = await _supabase.from('recipes').select();
+      final response = await _supabase
+          .from('recipes')
+          .select()
+          .range((_page - 1) * _limit, _page * _limit - 1); // Fetch first 15
       final List<dynamic> data = response;
-      // Maps the data to a list of Recipe objects
       _recipes = data.map((item) => Recipe.fromMap(item as Map<String, dynamic>)).toList();
+
+      // If we received fewer recipes than the limit, we've reached the end
+      if (data.length < _limit) {
+        _hasMore = false;
+      }
     } catch (error) {
       debugPrint('AN ERROR OCCURRED: $error');
     }
 
-    // Set loading to false and notify listeners
     _isLoading = false;
+    if (hasListeners) {
+      notifyListeners();
+    }
+  }
+
+  // Fetch more recipes for infinite scrolling
+  Future<void> fetchMoreRecipes() async {
+    // Don't fetch if we're already loading or if there are no more recipes
+    if (_isLoadingMore || !_hasMore) return;
+
+    _isLoadingMore = true;
+    _page++; // Go to the next page
+    if (hasListeners) {
+      notifyListeners();
+    }
+
+    // Define a minimum display time for the loading indicator
+    const minDisplayTime = Duration(milliseconds: 500);
+    final startTime = DateTime.now();
+
+    try {
+      final response = await _supabase
+          .from('recipes')
+          .select()
+          .range((_page - 1) * _limit, _page * _limit - 1); // Fetch the next batch
+
+      // Calculate how long the network request took
+      final networkTime = DateTime.now().difference(startTime);
+      
+      // If the request was faster than our minimum, wait the remaining time
+      if (networkTime < minDisplayTime) {
+        await Future.delayed(minDisplayTime - networkTime);
+      }
+
+      final List<dynamic> data = response;
+      final newRecipes = data.map((item) => Recipe.fromMap(item as Map<String, dynamic>)).toList();
+      
+      _recipes.addAll(newRecipes); // Add the new recipes to the existing list
+
+      // If we received fewer recipes than the limit, we've reached the end
+      if (newRecipes.length < _limit) {
+        _hasMore = false;
+      }
+
+    } catch (error) {
+      debugPrint('AN ERROR OCCURRED fetching more recipes: $error');
+    }
+
+    _isLoadingMore = false;
     if (hasListeners) {
       notifyListeners();
     }
@@ -47,17 +108,19 @@ class RecipeProvider with ChangeNotifier {
   // Fetch a single recipe by its ID
   Future<void> fetchRecipeById(int id) async {
     _isLoadingDetails = true;
-    _selectedRecipe = null; // Clear previous recipe
+    _selectedRecipe = null;
     notifyListeners();
 
     try {
-      final response =
-          await _supabase.from('recipes').select().eq('id', id).single();
+      final response = await _supabase
+          .from('recipes')
+          .select('*, recipes_meal_types(meal_types(meal_type))')
+          .eq('id', id)
+          .single();
 
-      // Store the fetched recipe
       _selectedRecipe = Recipe.fromMap(response);
     } on PostgrestException catch (e) {
-      print('🚨 Error fetching recipe by ID: ${e.message}');
+      debugPrint('🚨 Error fetching recipe by ID: ${e.message}');
       // Handle the error, maybe set an error state
     } finally {
       _isLoadingDetails = false;
@@ -65,28 +128,17 @@ class RecipeProvider with ChangeNotifier {
     }
   }
 
-  /// ********************************************
-  /// Add, Update, Delete Recipe Methods
-  /// **********************************************
-  
-  // Add a new recipe
   Future<bool> addRecipe(Recipe newRecipe) async {
     try {
-      // The insert method in Supabase's Dart client expects a List of Maps.
-      // .toJson() converts our Recipe object into the required Map format.
       await _supabase.from('recipes').insert([newRecipe.toMap()]);
-
-      // After adding, refresh the main recipe list to include the new one.
       await fetchRecipes();
-
       return true;
     } on PostgrestException catch (e) {
-      print('🚨 Error adding recipe: ${e.message}');
+      debugPrint('🚨 Error adding recipe: ${e.message}');
       return false;
     }
   }
 
-  // Update an existing recipe
   Future<bool> updateRecipe(Recipe updatedRecipe) async {
     try {
       await _supabase
@@ -94,34 +146,28 @@ class RecipeProvider with ChangeNotifier {
           .update(updatedRecipe.toMap())
           .eq('id', updatedRecipe.id);
 
-      // Find the index of the old recipe in our local list.
       final index = _recipes.indexWhere((recipe) => recipe.id == updatedRecipe.id);
 
-      // If found, replace it with the updated recipe.
       if (index != -1) {
         _recipes[index] = updatedRecipe;
-        notifyListeners(); // Tell the UI to rebuild.
+        notifyListeners();
       }
 
       return true;
     } on PostgrestException catch (e) {
-      print('🚨 Error updating recipe: ${e.message}');
+      debugPrint('🚨 Error updating recipe: ${e.message}');
       return false;
     }
   }
 
-  // Delete a recipe by its ID
   Future<bool> deleteRecipe(int id) async {
     try {
       await _supabase.from('recipes').delete().eq('id', id);
-
-      // Remove the recipe from the local list.
       _recipes.removeWhere((recipe) => recipe.id == id);
-      notifyListeners(); // Tell the UI to rebuild.
-
+      notifyListeners();
       return true;
     } on PostgrestException catch (e) {
-      print('🚨 Error deleting recipe: ${e.message}');
+      debugPrint('🚨 Error deleting recipe: ${e.message}');
       return false;
     }
   }

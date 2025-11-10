@@ -59,7 +59,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
         cookTime.isEmpty ||
         calories.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill the next text box')),
+        const SnackBar(content: Text('Please fill all fields')),
       );
       return;
     }
@@ -114,26 +114,50 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     }
 
     // supabase section
-    print('recipe added');
-    print('Instructions: $instructions');
-    print('Ingredients: $ingredients');
-    print('Prep time: $prepTime');
-    print('Cook time: $cookTime');
-    print('Calories: $calories');
+    debugPrint('recipe added');
+    debugPrint('Instructions: $instructions');
+    debugPrint('Ingredients: $ingredients');
+    debugPrint('Prep time: $prepTime');
+    debugPrint('Cook time: $cookTime');
+    debugPrint('Calories: $calories');
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not logged in')),
+        );
+        return;
+      }
 
-    // clean fields
-    _instructionsController.clear();
-    _ingredientsController.clear();
-    _prepTimeController.clear();
-    _cookTimeController.clear();
-    _caloriesController.clear();
+      final response = await Supabase.instance.client
+          .from('recipes')
+          .insert({
+            'user_id': user.id,
+            'instructions': instructions,
+            'ingredients': ingredients,
+            'prep_time': int.parse(prepTime),
+            'cook_time': int.parse(cookTime),
+            'calories': int.parse(calories),
+          })
+          .select(); // opcional: devuelve la fila insertada
 
-    // confirmation text
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Recepie Added')),
-    );
+      // clean fields
+      _instructionsController.clear();
+      _ingredientsController.clear();
+      _prepTimeController.clear();
+      _cookTimeController.clear();
+      _caloriesController.clear();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Recipe added successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error adding recipe: $e')),
+      );
+    }
   }
-
+// UI Section - add recipe
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.recipeToEdit != null;
@@ -156,7 +180,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
             const SizedBox(height: 16),
             _buildTextField(_cookTimeController, 'Cook Time (min)'),
             const SizedBox(height: 16),
-            _buildTextField(_caloriesController, 'Caloríes (kcal)'),
+            _buildTextField(_caloriesController, 'Calories (kcal)'),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _submitRecipe,
@@ -174,8 +198,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       ),
     );
   }
-
-  // Widget helper to not repeat code
+// function to build quicker the textfields
   Widget _buildTextField(TextEditingController controller, String label,
       {int maxLines = 1}) {
     return TextField(

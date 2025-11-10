@@ -1,6 +1,12 @@
 # Created by https://www.toptal.com/developers/gitignore/api/flutter,visualstudiocode,xcode,androidstudio
 # Edit at https://www.toptal.com/developers/gitignore?templates=flutter,visualstudiocode,xcode,androidstudio
 
+### Node.js ###
+/node_modules/
+
+# Secret keys
+.env
+
 ### Flutter ###
 # Flutter/Dart/Pub related
 **/doc/api/
