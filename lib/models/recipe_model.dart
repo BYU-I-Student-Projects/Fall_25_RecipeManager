@@ -88,7 +88,7 @@ class Recipe {
       'diet_restric': dietRestrictions,
       // Note: mealTypes are handled separately in the recipes_meal_types_rows table
       // They should be inserted/updated through that junction table
-      'mealTypes': mealTypes,
+      // 'mealTypes': mealTypes,
     };
   }
 }

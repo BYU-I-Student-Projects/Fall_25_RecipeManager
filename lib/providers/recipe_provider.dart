@@ -140,7 +140,7 @@ final _supabase = Supabase.instance.client;
     // Get the recipe data from your object
     final Map<String, dynamic> recipeData = newRecipe.toMap();
     // Explicitly add the user_id to the map
-    recipeData['user_id'] = user.id;
+    recipeData['user_uuid'] = user.id;
 
     // Insert the map
     try {
