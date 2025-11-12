@@ -1,6 +1,6 @@
 // lib/models/recipe_model.dart
 class Recipe {
-  final int id; 
+  final int? id;
   final String title;
   final List<String> ingredients; 
   final List<String> instructions;
@@ -13,7 +13,7 @@ class Recipe {
   final List<String> mealTypes;
 
   Recipe({
-    required this.id,
+    this.id,
     required this.title,
     required this.ingredients, 
     required this.instructions,
@@ -29,8 +29,8 @@ class Recipe {
   // Factory constructor to create a Recipe from a Supabase row (Map)
   factory Recipe.fromMap(Map<String, dynamic> json) {
     // Debug: Print the raw JSON to see the structure
-    print('🔍 Recipe JSON: ${json.keys}');
-    print('🔍 Meal types data: ${json['recipes_meal_types']}');
+    // print('🔍 Recipe JSON: ${json.keys}');
+    // print('🔍 Meal types data: ${json['recipes_meal_types']}');
     
     // Parse meal types from the joined data
     List<String> parsedMealTypes = [];
@@ -48,7 +48,7 @@ class Recipe {
           .toList();
     }
     
-    print('🔍 Parsed meal types: $parsedMealTypes');
+    // print('🔍 Parsed meal types: $parsedMealTypes');
 
     return Recipe(
       id: json['id'],
@@ -76,7 +76,6 @@ class Recipe {
   // Useful for INSERT and UPDATE operations.
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'name': title,
       // Joining the List<String> back into a single 'text' string.
       'ingredients': ingredients.join(' , '),
@@ -89,6 +88,7 @@ class Recipe {
       'diet_restric': dietRestrictions,
       // Note: mealTypes are handled separately in the recipes_meal_types_rows table
       // They should be inserted/updated through that junction table
+      // 'mealTypes': mealTypes,
     };
   }
 }

@@ -129,22 +129,45 @@ final _supabase = Supabase.instance.client;
   }
 
   Future<bool> addRecipe(Recipe newRecipe) async {
+    // Get the current user ID
+    final user = _supabase.auth.currentUser;
+    // Check if user is logged in
+    if (user == null) {
+      debugPrint('🚨 Error adding recipe: User is not logged in.');
+      return false;
+    }
+
+    // Get the recipe data from your object
+    final Map<String, dynamic> recipeData = newRecipe.toMap();
+    // Explicitly add the user_id to the map
+    recipeData['user_uuid'] = user.id;
+
+    // Insert the map
     try {
-      await _supabase.from('recipes').insert([newRecipe.toMap()]);
+      await _supabase.from('recipes').insert(recipeData);
+      // Refresh the local list of recipes
       await fetchRecipes();
       return true;
     } on PostgrestException catch (e) {
       debugPrint('🚨 Error adding recipe: ${e.message}');
       return false;
+    } catch (e) {
+      debugPrint('🚨 An unexpected error occurred: $e');
+      return false;
     }
   }
 
   Future<bool> updateRecipe(Recipe updatedRecipe) async {
+    final int? recipeId = updatedRecipe.id;
+    if (recipeId == null) {
+      debugPrint('🚨 Error updating recipe: Recipe has a null ID.');
+      return false;
+    }
     try {
       await _supabase
           .from('recipes')
           .update(updatedRecipe.toMap())
-          .eq('id', updatedRecipe.id);
+          .eq('id', recipeId);
 
       final index = _recipes.indexWhere((recipe) => recipe.id == updatedRecipe.id);
 
@@ -160,10 +183,15 @@ final _supabase = Supabase.instance.client;
     }
   }
 
-  Future<bool> deleteRecipe(int id) async {
+  Future<bool> deleteRecipe(int? id) async {
+    if (id == null) {
+      debugPrint('🚨 Error: Tried to delete a recipe with a null ID.');
+      return false;
+    }
     try {
-      await _supabase.from('recipes').delete().eq('id', id);
+      await _supabase.from('recipes').delete().match({'id': id});
       _recipes.removeWhere((recipe) => recipe.id == id);
+      await fetchRecipes();
       notifyListeners();
       return true;
     } on PostgrestException catch (e) {

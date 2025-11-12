@@ -92,13 +92,20 @@ class RecipeListItem extends StatelessWidget {
         ),
 
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => RecipeDetailScreen(recipeId: recipe.id),
-            ),
-          );
-        },
+          final int? recipeId = recipe.id;
+          if (recipeId != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RecipeDetailScreen(recipeId: recipeId),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Cannot open an unsaved recipe.')),
+            );
+          }
+        }
       ),
     
     );
