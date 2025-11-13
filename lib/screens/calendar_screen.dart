@@ -63,6 +63,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   Future.delayed(
                     const Duration(milliseconds: 300),
                     () {
+                      if (!context.mounted) return;
                       showDialog(
                         context: context,
                         builder: (context) {
@@ -98,11 +99,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                     value: _breakfastSelection,
                                     onChanged: (value) => setState(() {
                                       _breakfastSelection = value;
-                                      print('Selected Breakfast: $value');
+                                      debugPrint('Selected Breakfast: $value');
                                       // call supabase here
                                     }),
                                     onAdd: () =>
-                                        print('Add pressed for $_breakfastSelection'),
+                                        debugPrint('Add pressed for $_breakfastSelection'),
                                   ),
                                   const SizedBox(height: 12),
 
@@ -110,10 +111,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                     value: _lunchSelection,
                                     onChanged: (value) => setState(() {
                                       _lunchSelection = value;
-                                      print('Selected Lunch: $value');
+                                      debugPrint('Selected Lunch: $value');
                                     }),
                                     onAdd: () =>
-                                        print('Add pressed for $_lunchSelection'),
+                                        debugPrint('Add pressed for $_lunchSelection'),
                                   ),
                                   const SizedBox(height: 12),
 
@@ -121,10 +122,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                     value: _dinnerSelection,
                                     onChanged: (value) => setState(() {
                                       _dinnerSelection = value;
-                                      print('Selected Dinner: $value');
+                                      debugPrint('Selected Dinner: $value');
                                     }),
                                     onAdd: () =>
-                                        print('Add pressed for $_dinnerSelection'),
+                                        debugPrint('Add pressed for $_dinnerSelection'),
                                   ),
                                   const SizedBox(height: 12),
 
@@ -132,10 +133,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                     value: _snackSelection,
                                     onChanged: (value) => setState(() {
                                       _snackSelection = value;
-                                      print('Selected Snack: $value');
+                                      debugPrint('Selected Snack: $value');
                                     }),
                                     onAdd: () =>
-                                        print('Add pressed for $_snackSelection'),
+                                        debugPrint('Add pressed for $_snackSelection'),
                                   ),
                                   const SizedBox(height: 12),
 
@@ -143,10 +144,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                     value: _dessertSelection,
                                     onChanged: (value) => setState(() {
                                       _dessertSelection = value;
-                                      print('Selected Dessert: $value');
+                                      debugPrint('Selected Dessert: $value');
                                     }),
                                     onAdd: () =>
-                                        print('Add pressed for $_dessertSelection'),
+                                        debugPrint('Add pressed for $_dessertSelection'),
                                   ),
                                   const SizedBox(height: 20),
 
@@ -214,7 +215,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       children: [
         Expanded(
           child: DropdownButtonFormField<String>(
-            value: value,
+            initialValue: value,
             hint: const Text('Select a meal'),
             isExpanded: true,
             decoration: InputDecoration(

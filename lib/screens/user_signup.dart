@@ -26,8 +26,8 @@ class _UserSignupState extends State<UserSignup> {
         password: password,
       );
 
+      if (!mounted) return;
       if (response.user != null) {
-        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const MainScreen()),

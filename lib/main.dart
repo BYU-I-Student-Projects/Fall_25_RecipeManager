@@ -23,7 +23,7 @@ Future<void> main() async {
     anonKey: supabaseAnonKey,
   );
 
-  final session = Supabase.instance.client.auth.currentSession; // NEW
+  Supabase.instance.client.auth.currentSession; // NEW
 
   runApp(const MyApp());
 }
