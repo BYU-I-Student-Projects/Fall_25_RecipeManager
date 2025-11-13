@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/recipe_model.dart';
 import '../providers/recipe_provider.dart';
-import '../widgets/recipe_form.dart';
+import 'recipe_form.dart';
 
 class EditRecipeDialog extends StatelessWidget {
   final Recipe recipe;
