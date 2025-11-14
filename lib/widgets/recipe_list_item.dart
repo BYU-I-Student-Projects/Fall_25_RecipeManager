@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/recipe_model.dart'; // Import your Recipe model
 import '../providers/recipe_provider.dart'; // Import your provider
 import '../screens/recipe_detail_screen.dart'; // Import the detail screen
-import '../screens/add_recipe.dart'; //import the add and edit screen
+import '../screens/edit_recipe_dialog.dart';
 
 class RecipeListItem extends StatelessWidget {
   final Recipe recipe;
@@ -61,15 +61,12 @@ class RecipeListItem extends StatelessWidget {
           children: [
             IconButton(
               icon: const Icon(Icons.edit, color: Colors.blue),
-              onPressed: (){
-                // Go to the add_recipe screen in edit mode
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AddRecipeScreen(recipeToEdit: recipe),
-                  ),
+              onPressed: () {
+                // Open the EditRecipeDialog as a pop-up
+                showDialog(
+                  context: context,
+                  builder: (context) => EditRecipeDialog(recipe: recipe),
                 );
-                // debugPrint('Edit recipe ${recipe.id}');
               }, 
             ),
             IconButton(

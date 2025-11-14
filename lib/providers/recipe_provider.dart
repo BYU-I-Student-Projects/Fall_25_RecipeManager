@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/recipe_model.dart';
 
 class RecipeProvider with ChangeNotifier {
-final _supabase = Supabase.instance.client;
+  final _supabase = Supabase.instance.client;
   List<Recipe> _recipes = [];
   
   // Use two separate flags for different loading states
