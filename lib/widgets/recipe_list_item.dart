@@ -5,7 +5,11 @@ import 'package:provider/provider.dart';
 import '../models/recipe_model.dart'; // Import your Recipe model
 import '../providers/recipe_provider.dart'; // Import your provider
 import '../screens/recipe_detail_screen.dart'; // Import the detail screen
+<<<<<<< HEAD
 import 'edit_recipe_dialog.dart';
+=======
+import '../screens/edit_recipe_dialog.dart';
+>>>>>>> main
 
 class RecipeListItem extends StatelessWidget {
   final Recipe recipe;
