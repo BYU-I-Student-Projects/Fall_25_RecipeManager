@@ -23,6 +23,7 @@ class _RecipeFormState extends State<RecipeForm> {
 
   // Controllers
   late TextEditingController _titleController;
+  late TextEditingController _descriptionController;
   late TextEditingController _cuisineController;
   late TextEditingController _dietController;
   late TextEditingController _servingsController;
@@ -38,6 +39,7 @@ class _RecipeFormState extends State<RecipeForm> {
     final r = widget.initialRecipe;
     
     _titleController = TextEditingController(text: r?.title ?? '');
+    _descriptionController = TextEditingController(text: r?.description ?? '');
     _cuisineController = TextEditingController(text: r?.cuisine ?? '');
     _dietController = TextEditingController(text: r?.dietRestrictions ?? '');
     _servingsController = TextEditingController(text: r?.servings.toString() ?? '');
@@ -51,6 +53,7 @@ class _RecipeFormState extends State<RecipeForm> {
   @override
   void dispose() {
     _titleController.dispose();
+    _descriptionController.dispose();
     _cuisineController.dispose();
     _dietController.dispose();
     _servingsController.dispose();
@@ -85,6 +88,7 @@ class _RecipeFormState extends State<RecipeForm> {
 
     final recipe = Recipe(
       id: widget.initialRecipe?.id, // Keep ID if editing
+      description: _descriptionController.text.trim().isEmpty ? 'No description' : _descriptionController.text.trim(),
       title: _titleController.text.trim(),
       cuisine: _cuisineController.text.trim().isEmpty ? 'Unknown' : _cuisineController.text.trim(),
       dietRestrictions: _dietController.text.trim().isEmpty ? 'None' : _dietController.text.trim(),
@@ -108,6 +112,8 @@ class _RecipeFormState extends State<RecipeForm> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildTextField(controller: _titleController, label: 'Recipe Title', isRequired: true),
+          const SizedBox(height: 16),
+          _buildTextField(controller: _descriptionController, label: 'Description', maxLines: 3),
           const SizedBox(height: 16),
           Row(
             children: [

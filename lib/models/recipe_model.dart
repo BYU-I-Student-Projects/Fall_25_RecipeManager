@@ -10,6 +10,7 @@ class Recipe {
   final int calPerServing;
   final String cuisine; // e.g., Italian, Chinese
   final String dietRestrictions; // e.g., Vegan, Gluten-Free
+  final String description;
   final List<String> mealTypes;
 
   Recipe({
@@ -23,6 +24,7 @@ class Recipe {
     required this.calPerServing,
     required this.cuisine,
     required this.dietRestrictions,
+    required this.description,
     required this.mealTypes, 
   });
 
@@ -66,6 +68,7 @@ class Recipe {
       servings: int.tryParse(json['servings'] ?? '') ?? 0,
       cuisine: json['cuisine'] ?? 'N/A',
       dietRestrictions: json['diet_restric'] ?? 'nan',
+      description: json['description'] ?? 'No description.',
       mealTypes: parsedMealTypes.isEmpty ? ['All'] : parsedMealTypes, // Default to 'All' if empty
     );
   }
@@ -86,6 +89,7 @@ class Recipe {
       'servings': servings.toString(),
       'cuisine': cuisine,
       'diet_restric': dietRestrictions,
+      'description': description,
       // Note: mealTypes are handled separately in the recipes_meal_types_rows table
       // They should be inserted/updated through that junction table
       // 'mealTypes': mealTypes,

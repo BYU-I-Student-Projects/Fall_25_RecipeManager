@@ -33,8 +33,7 @@ class RecipeListItem extends StatelessWidget {
           children: [
 
             Text(
-              // recipe['description'],
-              "[Description Placeholder]",
+              recipe.description,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
