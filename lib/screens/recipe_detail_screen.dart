@@ -34,6 +34,21 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     const accent1 = Color(0xFFBAA898);
     const accent2 = Color(0xFFBFD7EA);
 
+    final List<Widget> actionButtons = recipe != null
+        ? [
+            // Edit Button
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.white),
+              onPressed: _onEditPressed, // Calls method defined below
+            ),
+            // Delete Button
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.white),
+              onPressed: _onDeletePressed, // Calls method defined below
+            ),
+          ]
+        : [];
+
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
@@ -43,6 +58,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           style: const TextStyle(color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: actionButtons,
       ),
       body: recipeProvider.isLoadingDetails
           ? const Center(child: CircularProgressIndicator())
@@ -171,6 +187,75 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       backgroundColor: bgColor.withValues(alpha: 0.5),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
+      ),
+    );
+  }
+// Function to handle the delete process
+  void _onDeletePressed() async {
+    final confirmed = await _showDeleteConfirmationDialog(context);
+    const headingColor = Color(0xFF839788);
+
+    if (confirmed == true) {
+      // Use listen: false to call method and avoid rebuilding here
+      final recipeProvider = Provider.of<RecipeProvider>(context, listen: false);
+
+      // Perform the delete operation
+      await recipeProvider.deleteRecipe(widget.recipeId);
+
+      // Navigate back after deletion
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Optional: Show a success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Recipe deleted successfully!'),
+            backgroundColor: headingColor,
+          ),
+        );
+      }
+    }
+  }
+
+  // Function to handle the edit process (Placeholder)
+  void _onEditPressed() {
+    const accent1 = Color(0xFFBAA898);
+    // TODO: Implement navigation to the Recipe Edit Screen (e.g., Navigator.of(context).pushNamed('/edit-recipe', arguments: widget.recipeId))
+
+    // Placeholder message for demonstration
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Edit functionality placeholder.'),
+        backgroundColor: accent1,
+      ),
+    );
+  }
+
+  // Confirmation dialog for deletion
+  Future<bool?> _showDeleteConfirmationDialog(BuildContext context) {
+    const headingColor = Color(0xFF839788);
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm Deletion'),
+        content: const Text(
+            'Are you sure you want to delete this recipe? This action cannot be undone.'),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Cancel', style: TextStyle(color: headingColor)),
+            onPressed: () {
+              Navigator.of(ctx).pop(false); // Do not delete
+            },
+          ),
+          TextButton(
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            onPressed: () {
+              Navigator.of(ctx).pop(true); // Confirm delete
+            },
+          ),
+        ],
       ),
     );
   }
