@@ -52,18 +52,6 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
     return Scaffold(
-      // logout function
-      appBar: AppBar( // ✅ NEW
-      backgroundColor: const Color(0xFFBAA898),
-      title: Text('Welcome, ${user?.email ?? "User"}'),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.logout),
-          tooltip: 'Logout',
-          onPressed: _logout, // ✅ Calls the logout function above
-      ),
-    ],
-  ),
       // Display the widget from our list based on the selected index.
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),
