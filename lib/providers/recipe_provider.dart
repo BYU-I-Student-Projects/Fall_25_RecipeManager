@@ -7,11 +7,17 @@ class RecipeProvider with ChangeNotifier {
   final _supabase = Supabase.instance.client;
   List<Recipe> _recipes = [];
   
-  bool _isLoading = false;
-  bool _isLoadingMore = false;
+  // Use two separate flags for different loading states
+  bool _isLoading = false;      // For the initial, full-screen load
+  bool _isLoadingMore = false;  // For loading more items at the bottom
+
   bool _hasMore = true;
   int _page = 1;
   final int _limit = 15;
+
+  // Store active filters
+  String? _activeCuisineFilter;
+  String? _activeMealTypeFilter;
 
   List<Recipe> get recipes => _recipes;
   bool get isLoading => _isLoading;
@@ -23,29 +29,63 @@ class RecipeProvider with ChangeNotifier {
   bool _isLoadingDetails = false;
   bool get isLoadingDetails => _isLoadingDetails;
 
-  Future<void> fetchRecipes() async {
+  Future<void> fetchRecipes({String? cuisineFilter, String? mealTypeFilter}) async {
     _isLoading = true;
     _page = 1;
     _hasMore = true;
     _recipes = [];
+    _activeCuisineFilter = cuisineFilter;
+    _activeMealTypeFilter = mealTypeFilter;
+    
     if (hasListeners) {
       notifyListeners();
     }
 
     try {
-      final response = await _supabase
+      // Build the query with filters
+      var query = _supabase
           .from('recipes')
-          .select('*, recipes_meal_types(meal_types(meal_type))')
-          .range((_page - 1) * _limit, _page * _limit - 1);
+          .select('*, recipes_meal_types(meal_types(meal_type))');
+
+      // Apply cuisine filter if provided
+      if (cuisineFilter != null && cuisineFilter != 'All') {
+        query = query.or('cuisine.ilike.%$cuisineFilter%,diet_restric.ilike.%$cuisineFilter%');
+      }
+
+      // Apply range based on whether we're filtering
+      final PostgrestTransformBuilder rangedQuery;
+      if (mealTypeFilter != null && mealTypeFilter != 'All') {
+        // Fetch more records to account for filtering
+        rangedQuery = query.range(0, 200); // Fetch more when filtering
+      } else {
+        // Normal pagination
+        rangedQuery = query.range((_page - 1) * _limit, _page * _limit - 1);
+      }
+
+      final response = await rangedQuery;
       
       final List<dynamic> data = response;
-      _recipes = data.map((item) => Recipe.fromMap(item as Map<String, dynamic>)).toList();
+      var allRecipes = data.map((item) => Recipe.fromMap(item as Map<String, dynamic>)).toList();
 
-      if (data.length < _limit) {
+      // Apply meal type filter in code (since Supabase join filtering is complex)
+      if (mealTypeFilter != null && mealTypeFilter != 'All') {
+        allRecipes = allRecipes.where((recipe) {
+          return recipe.mealTypes.any((mealType) => 
+            mealType.toLowerCase() == mealTypeFilter.toLowerCase()
+          );
+        }).toList();
+      }
+
+      _recipes = allRecipes;
+
+      // Update hasMore based on filter state
+      if (mealTypeFilter != null && mealTypeFilter != 'All') {
+        _hasMore = false; // We fetched all filtered results
+      } else if (data.length < _limit) {
         _hasMore = false;
       }
     } catch (error) {
-      debugPrint('AN ERROR OCCURRED: $error');
+      debugPrint('Error fetching recipes: $error');
     }
 
     _isLoading = false;
@@ -55,7 +95,10 @@ class RecipeProvider with ChangeNotifier {
   }
 
   Future<void> fetchMoreRecipes() async {
-    if (_isLoadingMore || !_hasMore) return;
+    // Don't fetch more if we're filtering or already loading
+    if (_isLoadingMore || !_hasMore || _activeMealTypeFilter != null || _activeCuisineFilter != null) {
+      return;
+    }
 
     _isLoadingMore = true;
     _page++;
@@ -88,7 +131,7 @@ class RecipeProvider with ChangeNotifier {
       }
 
     } catch (error) {
-      debugPrint('AN ERROR OCCURRED fetching more recipes: $error');
+      debugPrint('Error fetching more recipes: $error');
     }
 
     _isLoadingMore = false;
@@ -111,7 +154,7 @@ class RecipeProvider with ChangeNotifier {
 
       _selectedRecipe = Recipe.fromMap(response);
     } on PostgrestException catch (e) {
-      print('🚨 Error fetching recipe by ID: ${e.message}');
+      debugPrint('Error fetching recipe by ID: ${e.message}');
     } finally {
       _isLoadingDetails = false;
       notifyListeners();
@@ -124,7 +167,7 @@ class RecipeProvider with ChangeNotifier {
       await fetchRecipes();
       return true;
     } on PostgrestException catch (e) {
-      print('🚨 Error adding recipe: ${e.message}');
+      debugPrint('Error adding recipe: ${e.message}');
       return false;
     }
   }
@@ -145,7 +188,7 @@ class RecipeProvider with ChangeNotifier {
 
       return true;
     } on PostgrestException catch (e) {
-      print('🚨 Error updating recipe: ${e.message}');
+      debugPrint('Error updating recipe: ${e.message}');
       return false;
     }
   }
@@ -157,7 +200,7 @@ class RecipeProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } on PostgrestException catch (e) {
-      print('🚨 Error deleting recipe: ${e.message}');
+      debugPrint('Error deleting recipe: ${e.message}');
       return false;
     }
   }
