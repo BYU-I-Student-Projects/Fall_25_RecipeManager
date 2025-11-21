@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/recipe_model.dart'; // Import your Recipe model
 import '../providers/recipe_provider.dart'; // Import your provider
 import '../screens/recipe_detail_screen.dart'; // Import the detail screen
+import 'edit_recipe_dialog.dart';
 
 class RecipeListItem extends StatelessWidget {
   final Recipe recipe;
@@ -50,7 +51,7 @@ class RecipeListItem extends StatelessWidget {
                 const SizedBox(width: 12),
                 const Icon(Icons.dinner_dining, size: 16),
                 const SizedBox(width: 4),
-                Text('${recipe.cuisine}'),
+                Text(recipe.cuisine),
               ],
             ),
           ],
@@ -60,8 +61,12 @@ class RecipeListItem extends StatelessWidget {
           children: [
             IconButton(
               icon: const Icon(Icons.edit, color: Colors.blue),
-              onPressed: (){
-                debugPrint('Edit recipe ${recipe.id}');
+              onPressed: () {
+                // Open the EditRecipeDialog as a pop-up
+                showDialog(
+                  context: context,
+                  builder: (context) => EditRecipeDialog(recipe: recipe),
+                );
               }, 
             ),
             IconButton(
@@ -84,13 +89,19 @@ class RecipeListItem extends StatelessWidget {
         ),
 
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => RecipeDetailScreen(recipeId: recipe.id),
-            ),
-          );
-        },
+          final int? recipeId = recipe.id;
+          if (recipeId != null) {
+            // CHANGED: Use showDialog instead of Navigator.push
+            showDialog(
+              context: context,
+              builder: (context) => RecipeDetailDialog(recipeId: recipeId),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Cannot open an unsaved recipe.')),
+            );
+          }
+        }
       ),
     
     );

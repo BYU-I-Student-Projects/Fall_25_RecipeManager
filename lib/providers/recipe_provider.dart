@@ -21,7 +21,7 @@ class RecipeProvider with ChangeNotifier {
 
   List<Recipe> get recipes => _recipes;
   bool get isLoading => _isLoading;
-  bool get isLoadingMore => _isLoadingMore;
+  bool get isLoadingMore => _isLoadingMore; // Getter for the new flag
   bool get hasMore => _hasMore;
 
   Recipe? _selectedRecipe;
@@ -31,7 +31,7 @@ class RecipeProvider with ChangeNotifier {
 
   Future<void> fetchRecipes({String? cuisineFilter, String? mealTypeFilter}) async {
     _isLoading = true;
-    _page = 1;
+    _page = 1; // Reset to first page
     _hasMore = true;
     _recipes = [];
     _activeCuisineFilter = cuisineFilter;
@@ -94,6 +94,7 @@ class RecipeProvider with ChangeNotifier {
     }
   }
 
+  // Fetch more recipes for infinite scrolling
   Future<void> fetchMoreRecipes() async {
     // Don't fetch more if we're filtering or already loading
     if (_isLoadingMore || !_hasMore || _activeMealTypeFilter != null || _activeCuisineFilter != null) {
@@ -101,22 +102,25 @@ class RecipeProvider with ChangeNotifier {
     }
 
     _isLoadingMore = true;
-    _page++;
+    _page++; // Go to the next page
     if (hasListeners) {
       notifyListeners();
     }
 
+    // Define a minimum display time for the loading indicator
     const minDisplayTime = Duration(milliseconds: 500);
     final startTime = DateTime.now();
 
     try {
       final response = await _supabase
           .from('recipes')
-          .select('*, recipes_meal_types(meal_types(meal_type))')
-          .range((_page - 1) * _limit, _page * _limit - 1);
+          .select()
+          .range((_page - 1) * _limit, _page * _limit - 1); // Fetch the next batch
 
+      // Calculate how long the network request took
       final networkTime = DateTime.now().difference(startTime);
       
+      // If the request was faster than our minimum, wait the remaining time
       if (networkTime < minDisplayTime) {
         await Future.delayed(minDisplayTime - networkTime);
       }
@@ -124,8 +128,9 @@ class RecipeProvider with ChangeNotifier {
       final List<dynamic> data = response;
       final newRecipes = data.map((item) => Recipe.fromMap(item as Map<String, dynamic>)).toList();
       
-      _recipes.addAll(newRecipes);
+      _recipes.addAll(newRecipes); // Add the new recipes to the existing list
 
+      // If we received fewer recipes than the limit, we've reached the end
       if (newRecipes.length < _limit) {
         _hasMore = false;
       }
@@ -140,6 +145,7 @@ class RecipeProvider with ChangeNotifier {
     }
   }
 
+  // Fetch a single recipe by its ID
   Future<void> fetchRecipeById(int id) async {
     _isLoadingDetails = true;
     _selectedRecipe = null;
@@ -162,8 +168,23 @@ class RecipeProvider with ChangeNotifier {
   }
 
   Future<bool> addRecipe(Recipe newRecipe) async {
+    // Get the current user ID
+    final user = _supabase.auth.currentUser;
+    // Check if user is logged in
+    if (user == null) {
+      debugPrint('🚨 Error adding recipe: User is not logged in.');
+      return false;
+    }
+
+    // Get the recipe data from your object
+    final Map<String, dynamic> recipeData = newRecipe.toMap();
+    // Explicitly add the user_id to the map
+    recipeData['user_uuid'] = user.id;
+
+    // Insert the map
     try {
-      await _supabase.from('recipes').insert([newRecipe.toMap()]);
+      await _supabase.from('recipes').insert(recipeData);
+      // Refresh the local list of recipes
       await fetchRecipes();
       return true;
     } on PostgrestException catch (e) {
@@ -173,11 +194,16 @@ class RecipeProvider with ChangeNotifier {
   }
 
   Future<bool> updateRecipe(Recipe updatedRecipe) async {
+    final int? recipeId = updatedRecipe.id;
+    if (recipeId == null) {
+      debugPrint('🚨 Error updating recipe: Recipe has a null ID.');
+      return false;
+    }
     try {
       await _supabase
           .from('recipes')
           .update(updatedRecipe.toMap())
-          .eq('id', updatedRecipe.id);
+          .eq('id', recipeId);
 
       final index = _recipes.indexWhere((recipe) => recipe.id == updatedRecipe.id);
 
@@ -193,10 +219,15 @@ class RecipeProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> deleteRecipe(int id) async {
+  Future<bool> deleteRecipe(int? id) async {
+    if (id == null) {
+      debugPrint('🚨 Error: Tried to delete a recipe with a null ID.');
+      return false;
+    }
     try {
-      await _supabase.from('recipes').delete().eq('id', id);
+      await _supabase.from('recipes').delete().match({'id': id});
       _recipes.removeWhere((recipe) => recipe.id == id);
+      await fetchRecipes();
       notifyListeners();
       return true;
     } on PostgrestException catch (e) {

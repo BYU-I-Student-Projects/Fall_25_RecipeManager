@@ -1,6 +1,6 @@
 // lib/models/recipe_model.dart
 class Recipe {
-  final int id; 
+  final int? id;
   final String title;
   final List<String> ingredients; 
   final List<String> instructions;
@@ -13,7 +13,7 @@ class Recipe {
   final List<String> mealTypes;
 
   Recipe({
-    required this.id,
+    this.id,
     required this.title,
     required this.ingredients, 
     required this.instructions,
@@ -65,7 +65,6 @@ class Recipe {
   // Useful for INSERT and UPDATE operations.
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'name': title,
       'ingredients': ingredients.join(' , '),
       'instructions': instructions.join(' , '),

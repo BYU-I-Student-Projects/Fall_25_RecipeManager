@@ -6,7 +6,7 @@ class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
   
   @override
-  _SettingsScreenState createState() => _SettingsScreenState();
+  State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
@@ -83,6 +83,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 // Example of a separate screen for notification settings
 class NotificationSettingsScreen extends StatelessWidget {
+  const NotificationSettingsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

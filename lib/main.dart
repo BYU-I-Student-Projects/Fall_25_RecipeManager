@@ -6,14 +6,25 @@ import 'package:recipe_manager/screens/main_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/recipe_provider.dart';
 
+final prodSupabaseURL = 'https://uzojyrjxuhigisfvwxni.supabase.co';
+final prodSupabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6b2p5cmp4dWhpZ2lzZnZ3eG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1MjUyMTYsImV4cCI6MjA3NTEwMTIxNn0.vRbrEM5IccOdGUYX8MidpyPbnZs8gW5AZ0iFh44hxS4';
+
 Future<void> main() async {
   // Makes sure that all the widgets are initialized before running the app
   WidgetsFlutterBinding.ensureInitialized();
-  // Initialize supabase with our project URL and anon key
+
+  // Use kDebugMode to decide which keys to load
+  final supabaseUrl = prodSupabaseURL;
+  final supabaseAnonKey = prodSupabaseAnonKey;
+  
+  // Initialize Supabase
   await Supabase.initialize(
-    url: 'https://uzojyrjxuhigisfvwxni.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6b2p5cmp4dWhpZ2lzZnZ3eG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1MjUyMTYsImV4cCI6MjA3NTEwMTIxNn0.vRbrEM5IccOdGUYX8MidpyPbnZs8gW5AZ0iFh44hxS4',
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
   );
+
+  Supabase.instance.client.auth.currentSession; // NEW
+
   runApp(const MyApp());
 }
 

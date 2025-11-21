@@ -203,6 +203,12 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
     });
   }
 
+  void _onScroll() {
+    // A threshold helps trigger the fetch before the user hits the absolute bottom
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      Provider.of<RecipeProvider>(context, listen: false).fetchMoreRecipes();
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final recipeProvider = Provider.of<RecipeProvider>(context);
