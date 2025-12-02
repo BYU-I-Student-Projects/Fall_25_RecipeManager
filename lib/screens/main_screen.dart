@@ -38,7 +38,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
 // logout function
-  Future<void> _logout() async {
+  Future<void> logout() async {
     await Supabase.instance.client.auth.signOut();
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
