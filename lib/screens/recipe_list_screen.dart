@@ -19,17 +19,21 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
   bool _isSearching = false;
   String _selectedCuisineFilter = 'All';
   String _selectedMealTypeFilter = 'All';
+  bool _hasInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        Provider.of<RecipeProvider>(context, listen: false).fetchRecipes();
-      }
-    });
-
     _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitialized) {
+      _hasInitialized = true;
+      Provider.of<RecipeProvider>(context, listen: false).fetchRecipes();
+    }
   }
 
   @override
@@ -39,41 +43,36 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
     super.dispose();
   }
 
-  List<Recipe> _filterRecipes(List<Recipe> recipes) {
-    List<Recipe> filtered = recipes;
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      Provider.of<RecipeProvider>(context, listen: false).fetchMoreRecipes();
+    }
+  }
 
-    // Apply search filter
-    if (_searchQuery.isNotEmpty) {
-      filtered = filtered.where((recipe) {
-        final recipeTitle = recipe.title.toLowerCase();
-        final recipeCuisine = recipe.cuisine.toLowerCase();
-        final recipeIngredients = recipe.ingredients.join(' ').toLowerCase();
-        final query = _searchQuery.toLowerCase();
-        
-        return recipeTitle.contains(query) || 
-               recipeCuisine.contains(query) ||
-               recipeIngredients.contains(query);
-      }).toList();
+  // Client-side filter for search only
+  List<Recipe> _filterRecipesBySearch(List<Recipe> recipes) {
+    if (_searchQuery.isEmpty) {
+      return recipes;
     }
 
-    // Apply cuisine filter
-    if (_selectedCuisineFilter != 'All') {
-      filtered = filtered.where((recipe) {
-        return recipe.cuisine.toLowerCase() == _selectedCuisineFilter.toLowerCase() ||
-               recipe.dietRestrictions.toLowerCase() == _selectedCuisineFilter.toLowerCase();
-      }).toList();
-    }
+    return recipes.where((recipe) {
+      final recipeTitle = recipe.title.toLowerCase();
+      final recipeCuisine = recipe.cuisine.toLowerCase();
+      final recipeIngredients = recipe.ingredients.join(' ').toLowerCase();
+      final query = _searchQuery.toLowerCase();
+      
+      return recipeTitle.contains(query) || 
+             recipeCuisine.contains(query) ||
+             recipeIngredients.contains(query);
+    }).toList();
+  }
 
-    // Apply meal type filter
-    if (_selectedMealTypeFilter != 'All') {
-      filtered = filtered.where((recipe) {
-        return recipe.mealTypes.any((mealType) => 
-          mealType.toLowerCase() == _selectedMealTypeFilter.toLowerCase()
-        );
-      }).toList();
-    }
-
-    return filtered;
+  void _applyFilters() {
+    final cuisineFilter = _selectedCuisineFilter == 'All' ? null : _selectedCuisineFilter;
+    final mealTypeFilter = _selectedMealTypeFilter == 'All' ? null : _selectedMealTypeFilter;
+    
+    Provider.of<RecipeProvider>(context, listen: false)
+        .fetchRecipes(cuisineFilter: cuisineFilter, mealTypeFilter: mealTypeFilter);
   }
 
   void _toggleSearch() {
@@ -144,6 +143,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
         setState(() {
           _selectedCuisineFilter = value;
         });
+        _applyFilters();
       }
     });
   }
@@ -198,6 +198,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
         setState(() {
           _selectedMealTypeFilter = value;
         });
+        _applyFilters();
       }
     });
   }
@@ -211,7 +212,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
   @override
   Widget build(BuildContext context) {
     final recipeProvider = Provider.of<RecipeProvider>(context);
-    final filteredRecipes = _filterRecipes(recipeProvider.recipes);
+    final filteredRecipes = _filterRecipesBySearch(recipeProvider.recipes);
 
     return Scaffold(
       backgroundColor: const Color(0xFFEEE0CB),
@@ -342,6 +343,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                                 setState(() {
                                   _selectedMealTypeFilter = 'All';
                                 });
+                                _applyFilters();
                               },
                               backgroundColor: const Color(0xFF839788),
                               labelStyle: const TextStyle(color: Colors.white),
@@ -354,6 +356,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                                 setState(() {
                                   _selectedCuisineFilter = 'All';
                                 });
+                                _applyFilters();
                               },
                               backgroundColor: const Color(0xFF839788),
                               labelStyle: const TextStyle(color: Colors.white),
@@ -377,9 +380,9 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                           )
                         : ListView.builder(
                             controller: _scrollController,
-                            itemCount: filteredRecipes.length + (recipeProvider.hasMore && _searchQuery.isEmpty && _selectedCuisineFilter == 'All' && _selectedMealTypeFilter == 'All' ? 1 : 0),
+                            itemCount: filteredRecipes.length + (recipeProvider.hasMore && _searchQuery.isEmpty ? 1 : 0),
                             itemBuilder: ((context, index) {
-                              // Show loading indicator at the bottom only when not filtering
+                              // Show loading indicator at the bottom only when not filtering/searching
                               if (index == filteredRecipes.length) {
                                 return recipeProvider.isLoadingMore
                                     ? const Center(
