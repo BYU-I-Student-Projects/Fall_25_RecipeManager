@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/calendar_provider.dart';
+import '../models/calendar_model.dart';
+import '../models/recipe_model.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -13,22 +18,99 @@ class _CalendarScreenState extends State<CalendarScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
 
-  // Variables para guardar la selección de cada meal (inician como null)
-  String? _breakfastSelection;
-  String? _lunchSelection;
-  String? _dinnerSelection;
-  String? _snackSelection;
-  String? _dessertSelection;
+  // Estado: categoría seleccionada y receta seleccionada para cada una de las 5 filas
+  final List<String?> _selectedCategories = List<String?>.filled(5, null);
+  final List<Recipe?> _selectedRecipes = List<Recipe?>.filled(5, null);
 
-  final List<String> _mealTypes = [
-    'All',
-    'Breakfast',
-    'Brunch',
-    'Lunch',
-    'Dinner',
-    'Snack',
-    'Dessert',
-  ];
+  @override
+  void initState() {
+    super.initState();
+
+    // Cargar la data necesaria desde Supabase al iniciar la pantalla
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final mealProvider = context.read<MealDayProvider>();
+      // Meals ya asignados a días específicos
+      mealProvider.fetchMeals();
+      // Recetas disponibles para elegir por tipo de meal
+      mealProvider.fetchCalendarRecipes();
+    });
+  }
+
+  // Maneja el guardado de una comida usando el provider y el modelo MealDay
+  Future<bool> _onAddMeal({
+    required String mealCategory,
+    required Recipe selectedRecipe,
+  }) async {
+    if (_selectedDay == null) {
+      debugPrint('Error: No day selected for meal saving.');
+      return false;
+    }
+
+    final provider = context.read<MealDayProvider>();
+
+    final meal = MealDay(
+      idMeal: '', // Lo genera Supabase
+      createdAt: DateTime.now(),
+      userId: '', // Se sobreescribe en el provider con el usuario actual
+      mealCategory: mealCategory,
+      // Guardamos el nombre de la receta seleccionada para mostrarla luego
+      ingredients: selectedRecipe.title,
+      eatDate: DateTime(
+        _selectedDay!.year,
+        _selectedDay!.month,
+        _selectedDay!.day,
+      ),
+    );
+
+    // addMeal retorna true/false si tiene éxito o no
+    return await provider.addMeal(meal);
+  }
+
+  // === FUNCIÓN: Guarda todas las comidas seleccionadas a la vez ===
+  Future<void> _onSaveAllMeals() async {
+    if (_selectedDay == null) return;
+
+    // Usamos un BuildContext local para mostrar el SnackBar después de un await
+    final localContext = context;
+    int mealsSavedCount = 0;
+
+    // Itera sobre las 5 filas de selecciones
+    for (var i = 0; i < _selectedCategories.length; i++) {
+      final selectedCategory = _selectedCategories[i];
+      final selectedRecipe = _selectedRecipes[i];
+
+      // Verifica si la fila tiene una selección válida
+      if (selectedCategory != null && selectedRecipe != null) {
+        final success = await _onAddMeal(
+          mealCategory: selectedCategory,
+          selectedRecipe: selectedRecipe,
+        );
+        if (success) {
+          mealsSavedCount++;
+        }
+      }
+    }
+
+    // Cierra el diálogo antes de mostrar el mensaje (para evitar problemas de contexto)
+    if (localContext.mounted) {
+      Navigator.pop(localContext);
+    }
+
+    if (localContext.mounted) {
+      ScaffoldMessenger.of(localContext).showSnackBar(
+        SnackBar(
+          content: Text(
+            mealsSavedCount > 0
+                ? '$mealsSavedCount comidas guardadas exitosamente para el día.'
+                : 'No se seleccionaron comidas válidas para guardar.',
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +140,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       selectedDay.day,
                     );
                     _focusedDay = focusedDay;
+
+                    // Resetear selecciones de categoría/meal cada vez que se abre el popup
+                    for (var i = 0; i < _selectedCategories.length; i++) {
+                      _selectedCategories[i] = null;
+                      _selectedRecipes[i] = null;
+                    }
                   });
 
                   Future.delayed(
@@ -67,101 +155,92 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       showDialog(
                         context: context,
                         builder: (context) {
-                          return Dialog(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEEE0CB),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    'Your meals for today',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                          // === INICIO DEL CAMBIO CLAVE: StatefulBuilder para manejar el estado local del Dialog ===
+                          return StatefulBuilder(
+                            builder: (BuildContext dialogContext, StateSetter dialogSetState) {
+                              return Dialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEEE0CB),
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '${selectedDay.day}/${selectedDay.month}/${selectedDay.year}',
-                                    style: const TextStyle(fontSize: 16),
-                                  ),
-                                  const SizedBox(height: 12),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text(
+                                        'Your meals for today',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        '${selectedDay.day}/${selectedDay.month}/${selectedDay.year}',
+                                        style: const TextStyle(fontSize: 16),
+                                      ),
+                                      const SizedBox(height: 12),
 
-                                  // ===== Dropdowns =====
-                                  _buildMealRow(
-                                    value: _breakfastSelection,
-                                    onChanged: (value) => setState(() {
-                                      _breakfastSelection = value;
-                                      debugPrint('Selected Breakfast: $value');
-                                      // call supabase here
-                                    }),
-                                    onAdd: () =>
-                                        debugPrint('Add pressed for $_breakfastSelection'),
-                                  ),
-                                  const SizedBox(height: 12),
+                                      // ===== Dropdowns (5 filas) =====
+                                      Consumer<MealDayProvider>(
+                                        builder: (context, mealProvider, _) {
+                                          if (mealProvider.isLoadingRecipes &&
+                                              mealProvider.recipes.isEmpty) {
+                                            return const Padding(
+                                              padding: EdgeInsets.all(16.0),
+                                              child: CircularProgressIndicator(),
+                                            );
+                                          }
 
-                                  _buildMealRow(
-                                    value: _lunchSelection,
-                                    onChanged: (value) => setState(() {
-                                      _lunchSelection = value;
-                                      debugPrint('Selected Lunch: $value');
-                                    }),
-                                    onAdd: () =>
-                                        debugPrint('Add pressed for $_lunchSelection'),
-                                  ),
-                                  const SizedBox(height: 12),
+                                          final categories = mealProvider.availableMealTypes;
 
-                                  _buildMealRow(
-                                    value: _dinnerSelection,
-                                    onChanged: (value) => setState(() {
-                                      _dinnerSelection = value;
-                                      debugPrint('Selected Dinner: $value');
-                                    }),
-                                    onAdd: () =>
-                                        debugPrint('Add pressed for $_dinnerSelection'),
-                                  ),
-                                  const SizedBox(height: 12),
+                                          return Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: List.generate(5, (index) {
+                                              return Padding(
+                                                padding: const EdgeInsets.only(bottom: 12),
+                                                child: _buildMealRow(
+                                                  rowIndex: index,
+                                                  categories: categories,
+                                                  mealProvider: mealProvider,
+                                                  dialogSetState: dialogSetState, // <<< PASAMOS EL SETSTATE LOCAL
+                                                ),
+                                              );
+                                            }),
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(height: 20),
 
-                                  _buildMealRow(
-                                    value: _snackSelection,
-                                    onChanged: (value) => setState(() {
-                                      _snackSelection = value;
-                                      debugPrint('Selected Snack: $value');
-                                    }),
-                                    onAdd: () =>
-                                        debugPrint('Add pressed for $_snackSelection'),
+                                      // ===== Botones Guardar y Cancelar =====
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(dialogContext),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          ElevatedButton(
+                                            onPressed: _onSaveAllMeals, // <-- Llama a la función de guardado en lote
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFF839788),
+                                            ),
+                                            child: const Text('Save Meals'),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 12),
-
-                                  _buildMealRow(
-                                    value: _dessertSelection,
-                                    onChanged: (value) => setState(() {
-                                      _dessertSelection = value;
-                                      debugPrint('Selected Dessert: $value');
-                                    }),
-                                    onAdd: () =>
-                                        debugPrint('Add pressed for $_dessertSelection'),
-                                  ),
-                                  const SizedBox(height: 20),
-
-                                  ElevatedButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF839788),
-                                    ),
-                                    child: const Text('Close'),
-                                  ),
-                                ],
-                              ),
-                            ),
+                                ),
+                              );
+                            },
                           );
+                          // === FIN DEL CAMBIO CLAVE ===
                         },
                       );
                     },
@@ -191,12 +270,44 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
             const SizedBox(height: 8.0),
             Expanded(
-              child: Center(
-                child: _selectedDay != null
-                    ? Text(
-                        'Selected day: ${_selectedDay!.year}-${_selectedDay!.month.toString().padLeft(2, '0')}-${_selectedDay!.day.toString().padLeft(2, '0')}',
-                      )
-                    : const Text('No day selected'),
+              child: Consumer<MealDayProvider>(
+                builder: (context, mealProvider, _) {
+                  if (mealProvider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (_selectedDay == null) {
+                    return const Center(child: Text('No day selected'));
+                  }
+
+                  final mealsForDay = mealProvider.meals
+                      .where((m) =>
+                          m.eatDate != null &&
+                          isSameDay(m.eatDate, _selectedDay))
+                      .toList();
+
+                  if (mealsForDay.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'No meals for ${_selectedDay!.year}-${_selectedDay!.month.toString().padLeft(2, '0')}-${_selectedDay!.day.toString().padLeft(2, '0')}',
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: mealsForDay.length,
+                    itemBuilder: (context, index) {
+                      final meal = mealsForDay[index];
+                      return ListTile(
+                        title: Text(meal.mealCategory ?? 'Sin categoría'),
+                        subtitle: meal.ingredients != null &&
+                                meal.ingredients!.isNotEmpty
+                            ? Text(meal.ingredients!)
+                            : null,
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ],
@@ -207,16 +318,26 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   /// meal row builder function
   Widget _buildMealRow({
-    required String? value,
-    required Function(String?) onChanged,
-    required VoidCallback onAdd,
+    required int rowIndex,
+    required List<String> categories,
+    required MealDayProvider mealProvider,
+    required StateSetter dialogSetState, // <<< NUEVO PARÁMETRO
   }) {
+    final String? selectedCategory = _selectedCategories[rowIndex];
+    final Recipe? selectedRecipe = _selectedRecipes[rowIndex];
+
+    final List<Recipe> recipesForCategory = selectedCategory == null
+        ? <Recipe>[]
+        : mealProvider.recipesForMealType(selectedCategory);
+
     return Row(
       children: [
+        // Dropdown de categoría
         Expanded(
+          flex: 1,
           child: DropdownButtonFormField<String>(
-            initialValue: value,
-            hint: const Text('Select a meal'),
+            value: selectedCategory,
+            hint: const Text('Category'),
             isExpanded: true,
             decoration: InputDecoration(
               contentPadding:
@@ -228,22 +349,63 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 borderSide: BorderSide.none,
               ),
             ),
-            items: _mealTypes
+            items: categories
                 .map(
-                  (meal) => DropdownMenuItem(
-                    value: meal,
-                    child: Text(meal),
+                  (cat) => DropdownMenuItem<String>(
+                    value: cat,
+                    child: Text(cat),
                   ),
                 )
                 .toList(),
-            onChanged: onChanged,
+            onChanged: (value) {
+              // === USAMOS dialogSetState EN LUGAR DE setState() ===
+              dialogSetState(() {
+                _selectedCategories[rowIndex] = value;
+                _selectedRecipes[rowIndex] =
+                    null; // reset meal al cambiar categoría
+              });
+            },
           ),
         ),
         const SizedBox(width: 8),
-        ElevatedButton(
-          onPressed: onAdd,
-          child: const Text('Add'),
+
+        // Dropdown de meal filtrada por la categoría
+        Expanded(
+          flex: 2,
+          child: DropdownButtonFormField<Recipe>(
+            // Si la receta previamente seleccionada ya no está en la nueva categoría, su valor es null
+            value: recipesForCategory.contains(selectedRecipe)
+                ? selectedRecipe
+                : null,
+            hint: const Text('Meal'),
+            isExpanded: true,
+            decoration: InputDecoration(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              filled: true,
+              fillColor: Colors.grey[200],
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            items: recipesForCategory
+                .map(
+                  (recipe) => DropdownMenuItem<Recipe>(
+                    value: recipe,
+                    child: Text(recipe.title),
+                  ),
+                )
+                .toList(),
+            onChanged: (recipe) {
+              // === USAMOS dialogSetState EN LUGAR DE setState() ===
+              dialogSetState(() {
+                _selectedRecipes[rowIndex] = recipe;
+              });
+            },
+          ),
         ),
+        // Se ha eliminado el Botón Add individual.
       ],
     );
   }
