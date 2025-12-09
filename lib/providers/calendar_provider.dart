@@ -9,11 +9,11 @@ class MealDayProvider with ChangeNotifier {
   List<MealDay> _meals = [];
   bool _isLoading = false;
 
-  // Recetas disponibles para asignar en el calendario
+  // Recipes available for assignment in the calendar
   List<Recipe> _recipes = [];
   bool _isLoadingRecipes = false;
 
-  // Mapa de meal_type -> lista de recetas (ej. 'Breakfast' -> [Recipe1, Recipe2])
+  // Map of meal_type -> list of recipes (e.g., 'Breakfast' -> [Recipe1, Recipe2])
   Map<String, List<Recipe>> _recipesByMealType = {};
 
   List<MealDay> get meals => _meals;
@@ -22,15 +22,16 @@ class MealDayProvider with ChangeNotifier {
   List<Recipe> get recipes => _recipes;
   bool get isLoadingRecipes => _isLoadingRecipes;
 
-  // Lista de meal types disponibles basada en lo que viene de la BD
-  List<String> get availableMealTypes => _recipesByMealType.keys.toList()..sort();
+  // List of available meal types based on what comes from the DB
+  List<String> get availableMealTypes =>
+      _recipesByMealType.keys.toList()..sort();
 
-  // Obtener recetas para un meal type específico
+  // Get recipes for a specific meal type
   List<Recipe> recipesForMealType(String mealType) {
     return _recipesByMealType[mealType] ?? [];
   }
 
-  // Fetch all meals asignados a días
+  // Fetch all meals assigned to specific days
   Future<void> fetchMeals() async {
     _isLoading = true;
     notifyListeners();
@@ -47,7 +48,7 @@ class MealDayProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Reconstruye el mapa _recipesByMealType a partir de _recipes
+  // Rebuilds the _recipesByMealType map from _recipes
   void _buildRecipesByMealType() {
     final Map<String, List<Recipe>> map = {};
 
@@ -62,7 +63,7 @@ class MealDayProvider with ChangeNotifier {
     _recipesByMealType = map;
   }
 
-  // Fetch all recipes con sus meal types (para usar en el calendario)
+  // Fetch all recipes with their meal types (for use in the calendar)
   Future<void> fetchCalendarRecipes() async {
     _isLoadingRecipes = true;
     notifyListeners();
@@ -95,11 +96,11 @@ class MealDayProvider with ChangeNotifier {
     }
 
     final mealData = meal.toMap();
-    mealData['user_id'] = user.id; // Asegurarse de asignar el user_id actual
+    mealData['user_id'] = user.id; // Ensure current user_id is assigned
 
     try {
       await _supabase.from('meal-day-list').insert(mealData);
-      await fetchMeals(); // Actualiza la lista local
+      await fetchMeals(); // Updates local list
       return true;
     } catch (e) {
       debugPrint('❌ Error adding meal: $e');

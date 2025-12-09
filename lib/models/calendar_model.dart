@@ -15,14 +15,14 @@ class MealDay {
     this.eatDate,
   });
 
-  // Factory constructor para crear MealDay desde una fila de Supabase
+  // Factory constructor to create a MealDay from a Supabase row
   factory MealDay.fromMap(Map<String, dynamic> json) {
-    // Las columnas created_at y eat_date son DATE en la BD, suelen venir como 'YYYY-MM-DD'
+    // The created_at and eat_date columns are DATE in the DB, usually coming as 'YYYY-MM-DD'
     DateTime parseDate(dynamic value) {
       if (value == null) return DateTime.now();
       if (value is DateTime) return value;
       final s = value.toString();
-      // Acepta tanto 'YYYY-MM-DD' como 'YYYY-MM-DDTHH:mm:ss...'
+      // Accepts both 'YYYY-MM-DD' and 'YYYY-MM-DDTHH:mm:ss...'
       return DateTime.parse(s);
     }
 
@@ -36,7 +36,7 @@ class MealDay {
     );
   }
 
-  // Método para convertir un objeto MealDay a Map (para INSERT o UPDATE)
+  // Method to convert a MealDay object to a Map (for INSERT or UPDATE)
   Map<String, dynamic> toMap() {
     String formatDate(DateTime dt) => dt.toIso8601String().split('T').first;
 
