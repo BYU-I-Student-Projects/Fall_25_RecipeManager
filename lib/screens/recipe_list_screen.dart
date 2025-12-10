@@ -32,7 +32,9 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
     super.didChangeDependencies();
     if (!_hasInitialized) {
       _hasInitialized = true;
-      Provider.of<RecipeProvider>(context, listen: false).fetchRecipes();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Provider.of<RecipeProvider>(context, listen: false).fetchRecipes();
+      });
     }
   }
 
