@@ -157,7 +157,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         builder: (context) {
                           // === START OF KEY CHANGE: StatefulBuilder to handle local Dialog state ===
                           return StatefulBuilder(
-                            builder: (BuildContext dialogContext, StateSetter dialogSetState) {
+                            builder: (BuildContext dialogContext,
+                                StateSetter dialogSetState) {
                               return Dialog(
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
@@ -192,22 +193,26 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                               mealProvider.recipes.isEmpty) {
                                             return const Padding(
                                               padding: EdgeInsets.all(16.0),
-                                              child: CircularProgressIndicator(),
+                                              child:
+                                                  CircularProgressIndicator(),
                                             );
                                           }
 
-                                          final categories = mealProvider.availableMealTypes;
+                                          final categories =
+                                              mealProvider.availableMealTypes;
 
                                           return Column(
                                             mainAxisSize: MainAxisSize.min,
                                             children: List.generate(5, (index) {
                                               return Padding(
-                                                padding: const EdgeInsets.only(bottom: 12),
+                                                padding: const EdgeInsets.only(
+                                                    bottom: 12),
                                                 child: _buildMealRow(
                                                   rowIndex: index,
                                                   categories: categories,
                                                   mealProvider: mealProvider,
-                                                  dialogSetState: dialogSetState, // <<< WE PASS THE LOCAL SETSTATE
+                                                  dialogSetState:
+                                                      dialogSetState, // <<< WE PASS THE LOCAL SETSTATE
                                                 ),
                                               );
                                             }),
@@ -218,17 +223,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
                                       // ===== Save and Cancel Buttons =====
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
                                         children: [
                                           TextButton(
-                                            onPressed: () => Navigator.pop(dialogContext),
+                                            onPressed: () =>
+                                                Navigator.pop(dialogContext),
                                             child: const Text('Cancel'),
                                           ),
                                           const SizedBox(width: 10),
                                           ElevatedButton(
-                                            onPressed: _onSaveAllMeals, // <-- Calls the batch save function
+                                            onPressed:
+                                                _onSaveAllMeals, // <-- Calls the batch save function
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(0xFF839788),
+                                              backgroundColor:
+                                                  const Color(0xFF839788),
                                             ),
                                             child: const Text('Save Meals'),
                                           ),
@@ -336,7 +345,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         Expanded(
           flex: 1,
           child: DropdownButtonFormField<String>(
-            value: selectedCategory,
+            initialValue: selectedCategory,
             hint: const Text('Category'),
             isExpanded: true,
             decoration: InputDecoration(
@@ -374,7 +383,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           flex: 2,
           child: DropdownButtonFormField<Recipe>(
             // If the previously selected recipe is no longer in the new category, its value is null
-            value: recipesForCategory.contains(selectedRecipe)
+            initialValue: recipesForCategory.contains(selectedRecipe)
                 ? selectedRecipe
                 : null,
             hint: const Text('Meal'),
