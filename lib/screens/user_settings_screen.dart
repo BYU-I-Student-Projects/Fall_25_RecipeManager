@@ -587,7 +587,7 @@ class AboutScreen extends StatelessWidget {
             const SizedBox(height: 32),
             Center(
               child: Text(
-                '© 2024 Recipe App. All rights reserved.',
+                '© 2025 Recipe App. All rights reserved.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
@@ -636,7 +636,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Last Updated: December 2024',
+              'Last Updated: December 2025',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 24),
