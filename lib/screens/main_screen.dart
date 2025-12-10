@@ -1,9 +1,13 @@
 // lib/screens/main_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; 
+import 'package:recipe_manager/screens/grocery_list_screen.dart';
 import '/../screens/recipe_list_screen.dart';
-// import 'shopping_list_screen.dart';
-// import 'profile_screen.dart';
+import 'package:recipe_manager/screens/add_recipe_screen.dart';
+import 'package:recipe_manager/screens/calendar_screen.dart';
+import 'package:recipe_manager/screens/settings_screen.dart';
+import 'login_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -19,12 +23,12 @@ class _MainScreenState extends State<MainScreen> {
   // This is the list of screens/widgets to display for each tab.
   static const List<Widget> _widgetOptions = <Widget>[
     RecipeListScreen(),
-    // TODO: Replace the placeholders below with actual screen widgets
-    Scaffold(body: Center(child: Text('Shopping List Screen'))), 
-    Scaffold(body: Center(child: Text('Create Recipe Screen'))),
-    Scaffold(body: Center(child: Text('Calendar Screen'))),
-    Scaffold(body: Center(child: Text('Settings Screen'))),
-  ];
+    GroceryListScreen(), 
+    AddRecipeScreen(),
+    CalendarScreen(),
+    SettingsScreen(),
+    SettingsScreen(),
+  ]; 
 
   // This function is called when a tab is tapped.
   void _onItemTapped(int index) {
@@ -33,14 +37,39 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+// logout function
+  Future<void> _logout() async {
+    await Supabase.instance.client.auth.signOut();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const UserLogin()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
     return Scaffold(
+      // logout function
+      appBar: AppBar( // ✅ NEW
+      backgroundColor: const Color(0xFFBAA898),
+      title: Text('Welcome, ${user?.email ?? "User"}'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.logout),
+          tooltip: 'Logout',
+          onPressed: _logout, // ✅ Calls the logout function above
+      ),
+    ],
+  ),
       // Display the widget from our list based on the selected index.
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: const Color(0xFFBAA898),
         type: BottomNavigationBarType.fixed, // Ensures all items are shown
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -65,7 +94,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
         currentIndex: _selectedIndex, // Highlights the correct tab
-        selectedItemColor: Theme.of(context).primaryColor, // Or preferred color
+        selectedItemColor: const Color(0xFFFFFFFF), // Or preferred color
         onTap: _onItemTapped, // Calls when a tab is tapped
       ),
     );

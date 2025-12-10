@@ -34,6 +34,10 @@ dependencies:
   supabase_flutter: ^2.10.2
   # Provides common operations for manipulating paths: joining, splitting, normalizing, etc.
   path: ^1.9.1
+  # State management using Provider package
+  provider: ^6.1.5+1
+  table_calendar: ^3.2.0
+  shared_preferences: ^2.2.2
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
