@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
+import '../providers/recipe_provider.dart';
+import '../providers/calendar_provider.dart';
 
 import 'package:recipe_manager/providers/recipe_provider.dart';
 import 'package:recipe_manager/screens/auth/auth_gate.dart';
@@ -35,13 +37,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => RecipeProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => RecipeProvider()),
+        ChangeNotifierProvider(create: (context) => MealDayProvider()),
+      ],
       child: MaterialApp(
         title: 'Recipe App',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 255, 255, 255)),
-          useMaterial3: true, 
+          useMaterial3: true,
         ),
         home: AuthGate(),
       ),
