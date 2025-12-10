@@ -28,38 +28,31 @@ class Recipe {
 
   // Factory constructor to create a Recipe from a Supabase row (Map)
   factory Recipe.fromMap(Map<String, dynamic> json) {
-    // 1. Helper for parsing numbers that might come as Strings or Nums
-    int parseSafeInt(dynamic value) {
-      if (value == null) return 0;
-      if (value is num) return value.toInt();
-      if (value is String) return int.tryParse(value) ?? 0;
-      return 0;
-    }
-
-    // 2. Parse the nested meal types safely
+    // Parse meal types from the joined data
     List<String> parsedMealTypes = [];
-    if (json['recipes_meal_types'] != null && json['recipes_meal_types'] is List) {
-      parsedMealTypes = (json['recipes_meal_types'] as List)
+    if (json['recipes_meal_types'] != null) {
+      final mealTypeRows = json['recipes_meal_types'] as List;
+      parsedMealTypes = mealTypeRows
           .map((row) {
-            if (row is Map && row['meal_types'] != null && row['meal_types']['meal_type'] != null) {
+            // Handle the nested structure from Supabase
+            if (row['meal_types'] != null && row['meal_types']['meal_type'] != null) {
               return row['meal_types']['meal_type'] as String;
             }
             return null;
           })
-          .whereType<String>()
+          .whereType<String>() // Filter out any null values
           .toList();
     }
 
     return Recipe(
       id: json['id'],
       title: json['name'] ?? '',
-      ingredients: (json['ingredients'] ?? '').toString().split(' , '),
-      instructions: (json['instructions'] ?? '').toString().split(' , '),
-      // 3. Use the helper for ALL numeric fields
-      prepTime: parseSafeInt(json['pre-time-min']),
-      cookTime: parseSafeInt(json['cook-time-min']),
-      calPerServing: parseSafeInt(json['cal_per_serv']), // This is numeric in your schema!
-      servings: int.tryParse(json['servings']?.toString() ?? '') ?? 0,
+      ingredients: (json['ingredients'] ?? '').split(' , '),
+      instructions: (json['instructions'] ?? '').split(' , '),
+      prepTime: (json['pre-time-min'] as num?)?.toInt() ?? 0,
+      cookTime: (json['cook-time-min'] as num?)?.toInt() ?? 0,
+      calPerServing: (json['cal_per_serv'] as num?)?.toInt() ?? 0,
+      servings: int.tryParse(json['servings'] ?? '') ?? 0,
       cuisine: json['cuisine'] ?? 'N/A',
       dietRestrictions: json['diet_restric'] ?? 'nan',
       mealTypes: parsedMealTypes.isEmpty ? ['All'] : parsedMealTypes,
