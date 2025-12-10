@@ -7,7 +7,7 @@ import '/../screens/recipe_list_screen.dart';
 import 'package:recipe_manager/screens/add_recipe_screen.dart';
 import 'package:recipe_manager/screens/calendar_screen.dart';
 import 'package:recipe_manager/screens/settings_screen.dart';
-import 'auth/login_screen.dart';
+import 'login_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
