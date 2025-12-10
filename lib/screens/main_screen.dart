@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; 
 import 'package:recipe_manager/screens/grocery_list_screen.dart';
-import '/../screens/recipe_list_screen.dart';
+import 'package:recipe_manager/screens/recipe_list_screen.dart';
 import 'package:recipe_manager/screens/add_recipe.dart';
 import 'package:recipe_manager/screens/calendar_screen.dart';
 import 'package:recipe_manager/screens/user_settings_screen.dart';
@@ -27,7 +27,6 @@ class _MainScreenState extends State<MainScreen> {
     AddRecipeScreen(),
     CalendarScreen(),
     SettingsScreen(),
-    SettingsScreen(),
   ]; 
 
   // This function is called when a tab is tapped.
@@ -37,7 +36,7 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-// logout function
+  // logout function
   Future<void> logout() async {
     await Supabase.instance.client.auth.signOut();
     if (!mounted) return;
@@ -57,7 +56,6 @@ class _MainScreenState extends State<MainScreen> {
         child: _widgetOptions.elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: const Color(0xFFBAA898),
         type: BottomNavigationBarType.fixed, // Ensures all items are shown
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -82,7 +80,6 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
         currentIndex: _selectedIndex, // Highlights the correct tab
-        selectedItemColor: const Color(0xFFFFFFFF), // Or preferred color
         onTap: _onItemTapped, // Calls when a tab is tapped
       ),
     );

@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:recipe_manager/screens/main_screen.dart';
 import 'package:provider/provider.dart';
-import '../providers/recipe_provider.dart';
+import 'package:recipe_manager/providers/recipe_provider.dart';
+import 'package:recipe_manager/providers/theme_provider.dart';
 
 final prodSupabaseURL = 'https://uzojyrjxuhigisfvwxni.supabase.co';
 final prodSupabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6b2p5cmp4dWhpZ2lzZnZ3eG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1MjUyMTYsImV4cCI6MjA3NTEwMTIxNn0.vRbrEM5IccOdGUYX8MidpyPbnZs8gW5AZ0iFh44hxS4';
@@ -23,7 +24,7 @@ Future<void> main() async {
     anonKey: supabaseAnonKey,
   );
 
-  final session = Supabase.instance.client.auth.currentSession; // NEW
+  final session = Supabase.instance.client.auth.currentSession;
 
   runApp(const MyApp());
 }
@@ -33,15 +34,22 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => RecipeProvider(),
-      child: MaterialApp(
-        title: 'Recipe App',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 255, 255, 255)),
-          useMaterial3: true, 
-        ),
-        home: MainScreen(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => RecipeProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'Recipe App',
+            theme: themeProvider.lightTheme,
+            darkTheme: themeProvider.darkTheme,
+            themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            debugShowCheckedModeBanner: false,
+            home: const MainScreen(),
+          );
+        },
       ),
     );
   }
