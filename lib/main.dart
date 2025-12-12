@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => RecipeProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => MealDayProvider()), 
+        ChangeNotifierProvider(create: (_) => MealDayProvider()), // Ensure this is here from the previous fix
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -51,7 +51,8 @@ class MyApp extends StatelessWidget {
             darkTheme: themeProvider.darkTheme,
             themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             debugShowCheckedModeBanner: false,
-            home: const MainScreen(),
+            // Point to AuthGate so it checks if the user is logged in first
+            home: const AuthGate(), 
           );
         },
       ),
