@@ -262,15 +262,15 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
                       'category': editCategory,
                     };
                   });
-
+                  if (!mounted) return;
                   Navigator.pop(context);
                 } catch (e) {
                   debugPrint('Error updating item: $e');
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error updating item: $e')),
-                    );
-                  }
+                  if (!mounted) return;
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error updating item: $e')),
+                  );
                 }
               },
             ),
