@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:provider/provider.dart';
+import 'package:recipe_manager/providers/theme_provider.dart';
 
 import '../providers/calendar_provider.dart';
 import '../models/calendar_model.dart';
@@ -114,299 +115,121 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const Color accent1 = Color(0xFFBAA898);
-
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF839788),
         title: const Text('Calendar'),
       ),
-      body: Container(
-        color: const Color(0xFFEEE0CB),
-        child: Column(
-          children: [
-            TableCalendar(
-              firstDay: DateTime.utc(2010, 10, 16),
-              lastDay: DateTime.utc(2030, 3, 14),
-              focusedDay: _focusedDay,
-              calendarFormat: _calendarFormat,
-              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-              onDaySelected: (selectedDay, focusedDay) {
-                if (!isSameDay(_selectedDay, selectedDay)) {
-                  setState(() {
-                    _selectedDay = DateTime(
-                      selectedDay.year,
-                      selectedDay.month,
-                      selectedDay.day,
-                    );
-                    _focusedDay = focusedDay;
-
-                    // Reset category/meal selections every time the popup opens
-                    for (var i = 0; i < _selectedCategories.length; i++) {
-                      _selectedCategories[i] = null;
-                      _selectedRecipes[i] = null;
-                    }
-                  });
-
-                  Future.delayed(
-                    const Duration(milliseconds: 300),
-                    () {
-                      if (!context.mounted) return;
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          // === START OF KEY CHANGE: StatefulBuilder to handle local Dialog state ===
-                          return StatefulBuilder(
-                            builder: (BuildContext dialogContext, StateSetter dialogSetState) {
-                              return Dialog(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Container(
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEEE0CB),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Text(
-                                        'Your meals for today',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        '${selectedDay.day}/${selectedDay.month}/${selectedDay.year}',
-                                        style: const TextStyle(fontSize: 16),
-                                      ),
-                                      const SizedBox(height: 12),
-
-                                      // ===== Dropdowns (5 rows) =====
-                                      Consumer<MealDayProvider>(
-                                        builder: (context, mealProvider, _) {
-                                          if (mealProvider.isLoadingRecipes &&
-                                              mealProvider.recipes.isEmpty) {
-                                            return const Padding(
-                                              padding: EdgeInsets.all(16.0),
-                                              child: CircularProgressIndicator(),
-                                            );
-                                          }
-
-                                          final categories = mealProvider.availableMealTypes;
-
-                                          return Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: List.generate(5, (index) {
-                                              return Padding(
-                                                padding: const EdgeInsets.only(bottom: 12),
-                                                child: _buildMealRow(
-                                                  rowIndex: index,
-                                                  categories: categories,
-                                                  mealProvider: mealProvider,
-                                                  dialogSetState: dialogSetState, // <<< WE PASS THE LOCAL SETSTATE
-                                                ),
-                                              );
-                                            }),
-                                          );
-                                        },
-                                      ),
-                                      const SizedBox(height: 20),
-
-                                      // ===== Save and Cancel Buttons =====
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(dialogContext),
-                                            child: const Text('Cancel'),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          ElevatedButton(
-                                            onPressed: _onSaveAllMeals, // <-- Calls the batch save function
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(0xFF839788),
-                                            ),
-                                            child: const Text('Save Meals'),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                          // === END OF KEY CHANGE ===
-                        },
-                      );
-                    },
-                  );
-                }
-              },
-              onFormatChanged: (format) {
-                if (_calendarFormat != format) {
-                  setState(() => _calendarFormat = format);
-                }
-              },
-              onPageChanged: (focusedDay) => _focusedDay = focusedDay,
-              calendarStyle: const CalendarStyle(
-                todayDecoration: BoxDecoration(
-                  color: Color(0xFF839788),
-                  shape: BoxShape.circle,
-                ),
-                selectedDecoration: BoxDecoration(
-                  color: accent1,
-                  shape: BoxShape.circle,
-                ),
+      body: Column(
+        children: [
+          TableCalendar(
+            firstDay: DateTime.utc(2010, 10, 16),
+            lastDay: DateTime.utc(2030, 3, 14),
+            focusedDay: _focusedDay,
+            calendarFormat: _calendarFormat,
+            selectedDayPredicate: (day) {
+              return isSameDay(_selectedDay, day);
+            },
+            onDaySelected: (selectedDay, focusedDay) {
+              if (!isSameDay(_selectedDay, selectedDay)) {
+                setState(() {
+                  _selectedDay = DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
+                  _focusedDay = focusedDay;
+                });
+              }
+            },
+            onFormatChanged: (format) {
+              if (_calendarFormat != format) {
+                setState(() {
+                  _calendarFormat = format;
+                });
+              }
+            },
+            onPageChanged: (focusedDay) {
+              _focusedDay = focusedDay;
+            },
+            calendarStyle: CalendarStyle(
+              // Today decoration
+              todayDecoration: const BoxDecoration(
+                color: Color(0xFF839788),
+                shape: BoxShape.circle,
               ),
-              headerStyle: const HeaderStyle(
-                formatButtonVisible: false,
-                titleCentered: true,
+              // Selected day decoration
+              selectedDecoration: const BoxDecoration(
+                color: Color(0xFFBAA898),
+                shape: BoxShape.circle,
+              ),
+              // Default text styles
+              defaultTextStyle: TextStyle(
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              weekendTextStyle: TextStyle(
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
+              outsideTextStyle: TextStyle(
+                color: isDark ? Colors.grey[600] : Colors.grey[400],
               ),
             ),
-            const SizedBox(height: 8.0),
-            Expanded(
-              child: Consumer<MealDayProvider>(
-                builder: (context, mealProvider, _) {
-                  if (mealProvider.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (_selectedDay == null) {
-                    return const Center(child: Text('No day selected'));
-                  }
-
-                  final mealsForDay = mealProvider.meals
-                      .where((m) =>
-                          m.eatDate != null &&
-                          isSameDay(m.eatDate, _selectedDay))
-                      .toList();
-
-                  if (mealsForDay.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'No meals for ${_selectedDay!.year}-${_selectedDay!.month.toString().padLeft(2, '0')}-${_selectedDay!.day.toString().padLeft(2, '0')}',
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    itemCount: mealsForDay.length,
-                    itemBuilder: (context, index) {
-                      final meal = mealsForDay[index];
-                      return ListTile(
-                        title: Text(meal.mealCategory ?? 'Uncategorized'),
-                        subtitle: meal.ingredients != null &&
-                                meal.ingredients!.isNotEmpty
-                            ? Text(meal.ingredients!)
-                            : null,
-                      );
-                    },
-                  );
-                },
+            headerStyle: HeaderStyle(
+              formatButtonVisible: false,
+              titleCentered: true,
+              titleTextStyle: TextStyle(
+                color: isDark ? Colors.white : Colors.black,
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+              ),
+              leftChevronIcon: Icon(
+                Icons.chevron_left,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              rightChevronIcon: Icon(
+                Icons.chevron_right,
+                color: isDark ? Colors.white : Colors.black,
               ),
             ),
-          ],
-        ),
+            daysOfWeekStyle: DaysOfWeekStyle(
+              weekdayStyle: TextStyle(
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
+              weekendStyle: TextStyle(
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
+            ),
+            calendarBuilders: CalendarBuilders(
+              // Customize the appearance of calendar cells if needed
+              defaultBuilder: (context, day, focusedDay) {
+                return Container(
+                  margin: const EdgeInsets.all(4.0),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '${day.day}',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8.0),
+          // You can add a list of events for the selected day here
+          Expanded(
+            child: Center(
+              child: _selectedDay != null
+                  ? Text(
+                      'Selected day: ${_selectedDay!.year}-${_selectedDay!.month.toString().padLeft(2, '0')}-${_selectedDay!.day.toString().padLeft(2, '0')}',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    )
+                  : Text(
+                      'No day selected',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+            ),
+          ),
+        ],
       ),
-    );
-  }
-
-  /// meal row builder function
-  Widget _buildMealRow({
-    required int rowIndex,
-    required List<String> categories,
-    required MealDayProvider mealProvider,
-    required StateSetter dialogSetState, // <<< NEW PARAMETER
-  }) {
-    final String? selectedCategory = _selectedCategories[rowIndex];
-    final Recipe? selectedRecipe = _selectedRecipes[rowIndex];
-
-    final List<Recipe> recipesForCategory = selectedCategory == null
-        ? <Recipe>[]
-        : mealProvider.recipesForMealType(selectedCategory);
-
-    return Row(
-      children: [
-        // Category Dropdown
-        Expanded(
-          flex: 1,
-          child: DropdownButtonFormField<String>(
-            value: selectedCategory,
-            hint: const Text('Category'),
-            isExpanded: true,
-            decoration: InputDecoration(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              filled: true,
-              fillColor: Colors.grey[200],
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
-            ),
-            items: categories
-                .map(
-                  (cat) => DropdownMenuItem<String>(
-                    value: cat,
-                    child: Text(cat),
-                  ),
-                )
-                .toList(),
-            onChanged: (value) {
-              // === WE USE dialogSetState INSTEAD OF setState() ===
-              dialogSetState(() {
-                _selectedCategories[rowIndex] = value;
-                _selectedRecipes[rowIndex] =
-                    null; // reset meal when changing category
-              });
-            },
-          ),
-        ),
-        const SizedBox(width: 8),
-
-        // Meal Dropdown filtered by category
-        Expanded(
-          flex: 2,
-          child: DropdownButtonFormField<Recipe>(
-            // If the previously selected recipe is no longer in the new category, its value is null
-            value: recipesForCategory.contains(selectedRecipe)
-                ? selectedRecipe
-                : null,
-            hint: const Text('Meal'),
-            isExpanded: true,
-            decoration: InputDecoration(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              filled: true,
-              fillColor: Colors.grey[200],
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
-            ),
-            items: recipesForCategory
-                .map(
-                  (recipe) => DropdownMenuItem<Recipe>(
-                    value: recipe,
-                    child: Text(recipe.title),
-                  ),
-                )
-                .toList(),
-            onChanged: (recipe) {
-              // === WE USE dialogSetState INSTEAD OF setState() ===
-              dialogSetState(() {
-                _selectedRecipes[rowIndex] = recipe;
-              });
-            },
-          ),
-        ),
-        // The individual Add Button has been removed.
-      ],
     );
   }
 }
