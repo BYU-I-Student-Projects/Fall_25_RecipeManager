@@ -160,6 +160,10 @@ class RecipeProvider with ChangeNotifier {
   Future<void> fetchRecipeById(int id) async {
     _isLoadingDetails = true;
     _selectedRecipe = null;
+
+    // FIX (Persistence): Clear the note state immediately
+    _recipeNotes = '';
+
     notifyListeners();
 
     try {
@@ -170,6 +174,9 @@ class RecipeProvider with ChangeNotifier {
           .single();
 
       _selectedRecipe = Recipe.fromMap(response);
+
+      // CRITICAL: Fetch the notes for the newly selected recipe
+      await fetchNotesForRecipe(id);
     } on PostgrestException catch (e) {
       debugPrint('Error fetching recipe by ID: ${e.message}');
     } finally {
@@ -250,6 +257,8 @@ class RecipeProvider with ChangeNotifier {
 
   Future<void> fetchNotesForRecipe(int recipeId) async {
     _isLoadingNotes = true;
+    _recipeNotes = '';
+
     notifyListeners();
 
     final user = _supabase.auth.currentUser;
@@ -268,7 +277,7 @@ class RecipeProvider with ChangeNotifier {
           .eq('user_uuid', user.id)
           .maybeSingle();
 
-      _recipeNotes = res?['content'] ?? '';
+      _recipeNotes = res?['note'] ?? '';
     } catch (e) {
       debugPrint('Error fetching notes: $e');
     }
@@ -279,7 +288,10 @@ class RecipeProvider with ChangeNotifier {
 
   Future<void> saveNotes(int recipeId, String content) async {
     final user = _supabase.auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      debugPrint('🚨 Error saving note: User is not logged in.');
+      return;
+    }
 
     _recipeNotes = content;
     notifyListeners();
@@ -288,11 +300,11 @@ class RecipeProvider with ChangeNotifier {
       await _supabase.from('recipe_notes').upsert({
         'recipe_id': recipeId,
         'user_uuid': user.id,
-        'content': content,
+        'note': content,
         'updated_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      debugPrint('Error saving notes: $e');
+      debugPrint('🚨 CRITICAL Error saving notes: $e');
     }
   }
 }

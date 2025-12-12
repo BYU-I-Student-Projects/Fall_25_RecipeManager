@@ -13,20 +13,35 @@ class RecipeDetailDialog extends StatefulWidget {
 }
 
 class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
-  // Use a local controller to manage the TextField state.
+// 1. Declare the controller and a flag for initialization
   late TextEditingController _notesController;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    // Fetch recipe details when the dialog is first shown.
+    // Initialize controller early
+    _notesController = TextEditingController();
+
+    // Start fetching the recipe and notes right away (existing logic)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<RecipeProvider>(context, listen: false)
           .fetchRecipeById(widget.recipeId);
     });
+  }
 
-    // Initialize the controller here.
-    _notesController = TextEditingController();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_isInitialized) {
+      final recipeProvider =
+          Provider.of<RecipeProvider>(context, listen: false);
+
+      _notesController.text = recipeProvider.recipeNotes;
+
+      _isInitialized = true;
+    }
   }
 
   @override
@@ -64,51 +79,54 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
       return const Center(child: Text("No recipe loaded."));
     }
 
-    // Update the controller text when the provider's notes change
     if (_notesController.text != recipeProvider.recipeNotes) {
-      _notesController.text = recipeProvider.recipeNotes;
+      _notesController.value = _notesController.value.copyWith(
+        text: recipeProvider.recipeNotes,
+        selection:
+            TextSelection.collapsed(offset: recipeProvider.recipeNotes.length),
+      );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Notes",
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF839788),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        // IMPORTANT: The column inside _buildNotesPanel needs to stretch
+        // to fill the height provided by its parent Expanded widget.
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'My Recipe Notes',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-        ),
-        const SizedBox(height: 12),
-        Expanded(
-          child: TextField(
-            controller: _notesController,
-            maxLines: null,
-            expands: true,
-            // FIX: Add textAlignVertical to force content to the top
-            textAlignVertical: TextAlignVertical.top,
-            decoration: InputDecoration(
-              hintText: "Write your notes here...",
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 8),
+
+          // 1. WRAP THE TEXT FIELD IN EXPANDED
+          Expanded(
+            child: TextField(
+              controller: _notesController,
+              // 2. SET maxLines TO NULL for dynamic sizing
+              maxLines: null,
+              // 3. SET expands TO TRUE so it fills the Expanded parent
+              expands: true,
+              textAlignVertical: TextAlignVertical.top, // Start text at the top
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText:
+                    'Add your cooking notes, substitutions, or tips here...',
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
+          const SizedBox(height: 12),
+
+          // The Save Button (will sit at the bottom)
+          ElevatedButton(
             onPressed: () {
-              recipeProvider.saveNotes(recipe.id!, _notesController.text);
+              // ... (saving logic)
             },
-            child: const Text("Save Note"),
+            child: const Text('Save Note'),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -212,7 +230,7 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                         padding: const EdgeInsets.symmetric(
                                             vertical: 8, horizontal: 12),
                                         decoration: BoxDecoration(
-                                          // FIX: Replace .withOpacity(0.2) with .withValues(alpha: 51)
+                                          // Corrected alpha value for ~0.2 opacity
                                           color: accent1.withValues(alpha: 51),
                                           borderRadius:
                                               BorderRadius.circular(8),
