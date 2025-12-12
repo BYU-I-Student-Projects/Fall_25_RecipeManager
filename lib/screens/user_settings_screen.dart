@@ -345,7 +345,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   String _getInitials(String name) {
-    List<String> nameParts = name.split(' ');
+    // Trim whitespace and filter out empty strings resulting from multiple spaces
+    if (name.trim().isEmpty) {
+      return 'U';
+    }
+    List<String> nameParts = name.trim().split(' ').where((part) => part.isNotEmpty).toList();
+    
     if (nameParts.length >= 2) {
       return '${nameParts[0][0]}${nameParts[1][0]}'.toUpperCase();
     } else if (nameParts.isNotEmpty) {
