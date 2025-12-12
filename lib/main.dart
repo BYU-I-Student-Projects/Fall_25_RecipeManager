@@ -2,10 +2,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:recipe_manager/screens/main_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:recipe_manager/providers/recipe_provider.dart';
 import 'package:recipe_manager/providers/theme_provider.dart';
+import '../providers/recipe_provider.dart';
+import '../providers/calendar_provider.dart';
+
+import 'package:recipe_manager/providers/recipe_provider.dart';
+import 'package:recipe_manager/screens/auth/auth_gate.dart';
+
 
 final prodSupabaseURL = 'https://uzojyrjxuhigisfvwxni.supabase.co';
 final prodSupabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6b2p5cmp4dWhpZ2lzZnZ3eG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1MjUyMTYsImV4cCI6MjA3NTEwMTIxNn0.vRbrEM5IccOdGUYX8MidpyPbnZs8gW5AZ0iFh44hxS4';
@@ -24,7 +29,7 @@ Future<void> main() async {
     anonKey: supabaseAnonKey,
   );
 
-  final session = Supabase.instance.client.auth.currentSession;
+  Supabase.instance.client.auth.currentSession; // NEW
 
   runApp(const MyApp());
 }

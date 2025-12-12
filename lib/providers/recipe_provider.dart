@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/recipe_model.dart';
 
 class RecipeProvider with ChangeNotifier {
-final _supabase = Supabase.instance.client;
+  final _supabase = Supabase.instance.client;
   List<Recipe> _recipes = [];
   
   // Use two separate flags for different loading states
@@ -14,6 +14,10 @@ final _supabase = Supabase.instance.client;
   bool _hasMore = true;
   int _page = 1;
   final int _limit = 15;
+
+  // Store active filters
+  String? _activeCuisineFilter;
+  String? _activeMealTypeFilter;
 
   List<Recipe> get recipes => _recipes;
   bool get isLoading => _isLoading;
@@ -25,29 +29,63 @@ final _supabase = Supabase.instance.client;
   bool _isLoadingDetails = false;
   bool get isLoadingDetails => _isLoadingDetails;
 
-  Future<void> fetchRecipes() async {
+  Future<void> fetchRecipes({String? cuisineFilter, String? mealTypeFilter}) async {
     _isLoading = true;
     _page = 1; // Reset to first page
     _hasMore = true;
-    _recipes = []; // Clear existing recipes
+    _recipes = [];
+    _activeCuisineFilter = cuisineFilter;
+    _activeMealTypeFilter = mealTypeFilter;
+    
     if (hasListeners) {
       notifyListeners();
     }
 
     try {
-      final response = await _supabase
+      // Build the query with filters
+      var query = _supabase
           .from('recipes')
-          .select()
-          .range((_page - 1) * _limit, _page * _limit - 1); // Fetch first 15
-      final List<dynamic> data = response;
-      _recipes = data.map((item) => Recipe.fromMap(item as Map<String, dynamic>)).toList();
+          .select('*, recipes_meal_types(meal_types(meal_type))');
 
-      // If we received fewer recipes than the limit, we've reached the end
-      if (data.length < _limit) {
+      // Apply cuisine filter if provided
+      if (cuisineFilter != null && cuisineFilter != 'All') {
+        query = query.or('cuisine.ilike.%$cuisineFilter%,diet_restric.ilike.%$cuisineFilter%');
+      }
+
+      // Apply range based on whether we're filtering
+      final PostgrestTransformBuilder rangedQuery;
+      if (mealTypeFilter != null && mealTypeFilter != 'All') {
+        // Fetch more records to account for filtering
+        rangedQuery = query.range(0, 200); // Fetch more when filtering
+      } else {
+        // Normal pagination
+        rangedQuery = query.range((_page - 1) * _limit, _page * _limit - 1);
+      }
+
+      final response = await rangedQuery;
+      
+      final List<dynamic> data = response;
+      var allRecipes = data.map((item) => Recipe.fromMap(item as Map<String, dynamic>)).toList();
+
+      // Apply meal type filter in code (since Supabase join filtering is complex)
+      if (mealTypeFilter != null && mealTypeFilter != 'All') {
+        allRecipes = allRecipes.where((recipe) {
+          return recipe.mealTypes.any((mealType) => 
+            mealType.toLowerCase() == mealTypeFilter.toLowerCase()
+          );
+        }).toList();
+      }
+
+      _recipes = allRecipes;
+
+      // Update hasMore based on filter state
+      if (mealTypeFilter != null && mealTypeFilter != 'All') {
+        _hasMore = false; // We fetched all filtered results
+      } else if (data.length < _limit) {
         _hasMore = false;
       }
     } catch (error) {
-      debugPrint('AN ERROR OCCURRED: $error');
+      debugPrint('Error fetching recipes: $error');
     }
 
     _isLoading = false;
@@ -58,8 +96,10 @@ final _supabase = Supabase.instance.client;
 
   // Fetch more recipes for infinite scrolling
   Future<void> fetchMoreRecipes() async {
-    // Don't fetch if we're already loading or if there are no more recipes
-    if (_isLoadingMore || !_hasMore) return;
+    // Don't fetch more if we're filtering or already loading
+    if (_isLoadingMore || !_hasMore || _activeMealTypeFilter != null || _activeCuisineFilter != null) {
+      return;
+    }
 
     _isLoadingMore = true;
     _page++; // Go to the next page
@@ -96,7 +136,7 @@ final _supabase = Supabase.instance.client;
       }
 
     } catch (error) {
-      debugPrint('AN ERROR OCCURRED fetching more recipes: $error');
+      debugPrint('Error fetching more recipes: $error');
     }
 
     _isLoadingMore = false;
@@ -120,8 +160,7 @@ final _supabase = Supabase.instance.client;
 
       _selectedRecipe = Recipe.fromMap(response);
     } on PostgrestException catch (e) {
-      debugPrint('🚨 Error fetching recipe by ID: ${e.message}');
-      // Handle the error, maybe set an error state
+      debugPrint('Error fetching recipe by ID: ${e.message}');
     } finally {
       _isLoadingDetails = false;
       notifyListeners();
@@ -129,22 +168,42 @@ final _supabase = Supabase.instance.client;
   }
 
   Future<bool> addRecipe(Recipe newRecipe) async {
+    // Get the current user ID
+    final user = _supabase.auth.currentUser;
+    // Check if user is logged in
+    if (user == null) {
+      debugPrint('🚨 Error adding recipe: User is not logged in.');
+      return false;
+    }
+
+    // Get the recipe data from your object
+    final Map<String, dynamic> recipeData = newRecipe.toMap();
+    // Explicitly add the user_id to the map
+    recipeData['user_uuid'] = user.id;
+
+    // Insert the map
     try {
-      await _supabase.from('recipes').insert([newRecipe.toMap()]);
+      await _supabase.from('recipes').insert(recipeData);
+      // Refresh the local list of recipes
       await fetchRecipes();
       return true;
     } on PostgrestException catch (e) {
-      debugPrint('🚨 Error adding recipe: ${e.message}');
+      debugPrint('Error adding recipe: ${e.message}');
       return false;
     }
   }
 
   Future<bool> updateRecipe(Recipe updatedRecipe) async {
+    final int? recipeId = updatedRecipe.id;
+    if (recipeId == null) {
+      debugPrint('🚨 Error updating recipe: Recipe has a null ID.');
+      return false;
+    }
     try {
       await _supabase
           .from('recipes')
           .update(updatedRecipe.toMap())
-          .eq('id', updatedRecipe.id);
+          .eq('id', recipeId);
 
       final index = _recipes.indexWhere((recipe) => recipe.id == updatedRecipe.id);
 
@@ -155,19 +214,24 @@ final _supabase = Supabase.instance.client;
 
       return true;
     } on PostgrestException catch (e) {
-      debugPrint('🚨 Error updating recipe: ${e.message}');
+      debugPrint('Error updating recipe: ${e.message}');
       return false;
     }
   }
 
-  Future<bool> deleteRecipe(int id) async {
+  Future<bool> deleteRecipe(int? id) async {
+    if (id == null) {
+      debugPrint('🚨 Error: Tried to delete a recipe with a null ID.');
+      return false;
+    }
     try {
-      await _supabase.from('recipes').delete().eq('id', id);
+      await _supabase.from('recipes').delete().match({'id': id});
       _recipes.removeWhere((recipe) => recipe.id == id);
+      await fetchRecipes();
       notifyListeners();
       return true;
     } on PostgrestException catch (e) {
-      debugPrint('🚨 Error deleting recipe: ${e.message}');
+      debugPrint('Error deleting recipe: ${e.message}');
       return false;
     }
   }

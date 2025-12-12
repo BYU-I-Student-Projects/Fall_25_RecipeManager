@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; 
 import 'package:recipe_manager/screens/grocery_list_screen.dart';
 import 'package:recipe_manager/screens/recipe_list_screen.dart';
-import 'package:recipe_manager/screens/add_recipe.dart';
+import 'package:recipe_manager/screens/add_recipe_screen.dart';
 import 'package:recipe_manager/screens/calendar_screen.dart';
-import 'package:recipe_manager/screens/user_settings_screen.dart';
-import 'user_login.dart';
+import 'package:recipe_manager/screens/settings_screen.dart';
+import 'login_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});

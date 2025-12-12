@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'user_login.dart';
+import 'login_screen.dart';
 import 'main_screen.dart';
 
 class UserSignup extends StatefulWidget {
@@ -26,8 +26,8 @@ class _UserSignupState extends State<UserSignup> {
         password: password,
       );
 
+      if (!mounted) return;
       if (response.user != null) {
-        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const MainScreen()),

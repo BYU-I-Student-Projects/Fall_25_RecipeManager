@@ -1,8 +1,8 @@
 // lib/screens/user_login.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'main_screen.dart';
-import 'user_signup.dart';
+import 'package:recipe_manager/screens/main_screen.dart';
+import 'package:recipe_manager/screens/signup_screen.dart';
 
 class UserLogin extends StatefulWidget {
   const UserLogin({super.key});
