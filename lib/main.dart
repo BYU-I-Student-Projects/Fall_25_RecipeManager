@@ -5,10 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:recipe_manager/providers/recipe_provider.dart';
 import 'package:recipe_manager/providers/theme_provider.dart';
-import '../providers/recipe_provider.dart';
 import '../providers/calendar_provider.dart';
-
-import 'package:recipe_manager/providers/recipe_provider.dart';
+import 'package:recipe_manager/screens/main_screen.dart';
 import 'package:recipe_manager/screens/auth/auth_gate.dart';
 
 
