@@ -41,6 +41,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => RecipeProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => MealDayProvider()), 
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
