@@ -43,11 +43,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
     super.dispose();
   }
 
-  void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
-      Provider.of<RecipeProvider>(context, listen: false).fetchMoreRecipes();
-    }
-  }
+
 
   // Client-side filter for search only
   List<Recipe> _filterRecipesBySearch(List<Recipe> recipes) {
