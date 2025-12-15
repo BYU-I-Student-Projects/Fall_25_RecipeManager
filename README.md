@@ -3,6 +3,8 @@
 A mobile recipe management application built with Flutter for CSE 310: Applied Programming. This app allows users to create, organize, and plan their meals, manage a pantry, and generate shopping lists.
 
 ---
+### Use the app now! -> https://recipemanager-66fb2.web.app 
+---
 
 ## ✨ Features
 
@@ -12,11 +14,6 @@ A mobile recipe management application built with Flutter for CSE 310: Applied P
 - Attach **private notes** to any recipe.
 - Rate recipes on a **5-star scale**.
 - Categorize recipes with custom **tags** (e.g., "Breakfast", "Quick to Make").
-- Toggle ingredient units between **imperial and metric**.
-
-### Organization
-- Create custom **recipe collections** (e.g., "Dad's Favorites").
-- View dynamic collections based on shared tags.
 
 ### Shopping & Pantry
 - Maintain a digital **pantry** of owned ingredients.
@@ -39,3 +36,4 @@ A mobile recipe management application built with Flutter for CSE 310: Applied P
 - **Framework**: Flutter
 - **Language**: Dart
 - **Backend**: Supabase (Database, Authentication, Storage)
+- **Deployment**: Firebase
