@@ -16,7 +16,6 @@ class RecipeDetailDialog extends StatefulWidget {
 
 class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
   late TextEditingController _notesController;
-  bool _isInitialized = false;
 
   // Rating state
   int _myRating = 0;
@@ -29,12 +28,19 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
     super.initState();
     _notesController = TextEditingController();
 
+    // Load data after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      Provider.of<RecipeProvider>(context, listen: false)
-          .fetchRecipeById(widget.recipeId);
       final provider = Provider.of<RecipeProvider>(context, listen: false);
 
+      // Fetch the recipe details (this also fetches the notes internally)
       await provider.fetchRecipeById(widget.recipeId);
+
+      // Populate the notes controller with the fetched notes
+      if (mounted) {
+        _notesController.text = provider.recipeNotes;
+      }
+
+      // Load the ratings
       await _loadRatings();
     });
   }
@@ -62,23 +68,12 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isInitialized) {
-      final recipeProvider =
-          Provider.of<RecipeProvider>(context, listen: false);
-      _notesController.text = recipeProvider.recipeNotes;
-      _isInitialized = true;
-    }
-  }
-
-  @override
   void dispose() {
     _notesController.dispose();
     super.dispose();
   }
 
-  // --- Helper Widget Function (Only defined ONCE now) ---
+  // --- Helper Widget Function ---
   Widget _infoChip(IconData icon, String text, Color bgColor, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -107,54 +102,67 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
     );
   }
 
-  Widget _buildNotesPanel(BuildContext context) {
+  // --- Restored Notes Section ---
+  Widget _buildNotesSection(BuildContext context) {
     final recipeProvider = Provider.of<RecipeProvider>(context);
-    final recipe = recipeProvider.selectedRecipe;
+    final theme = Theme.of(context);
+    final headingColor = theme.primaryColor;
 
-    if (recipe == null) {
-      return const Center(child: Text("No recipe loaded."));
-    }
-
-    if (_notesController.text != recipeProvider.recipeNotes) {
-      _notesController.value = _notesController.value.copyWith(
-        text: recipeProvider.recipeNotes,
-        selection: TextSelection.collapsed(
-            offset: recipeProvider.recipeNotes.length),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'My Recipe Notes',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 32),
+        Text(
+          'My Notes',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: headingColor,
           ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: TextField(
-              controller: _notesController,
-              maxLines: null,
-              expands: true,
-              textAlignVertical: TextAlignVertical.top,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText:
-                    'Add your cooking notes, substitutions, or tips here...',
+        ),
+        const SizedBox(height: 8),
+        recipeProvider.isLoadingNotes
+            ? const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  TextField(
+                    controller: _notesController,
+                    maxLines: 4,
+                    minLines: 2,
+                    decoration: InputDecoration(
+                      hintText: 'Add your private notes, tips, or modifications here...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      filled: true,
+                      fillColor: theme.cardColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      await recipeProvider.saveNotes(
+                          widget.recipeId, _notesController.text);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Note saved!')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.save, size: 18),
+                    label: const Text('Save Note'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: headingColor,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: () {
-              // Save logic here
-            },
-            child: const Text('Save Note'),
-          ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -182,6 +190,7 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,6 +214,8 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
               ],
             ),
             Divider(height: 24, color: headingColor),
+
+            // Content
             Expanded(
               child: recipeProvider.isLoadingDetails
                   ? const Center(child: CircularProgressIndicator())
@@ -281,6 +292,8 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                         ),
                                 ),
                                 const SizedBox(height: 20),
+
+                                // Description
                                 Text(
                                   recipe.description,
                                   style: const TextStyle(
@@ -291,6 +304,8 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                   ),
                                 ),
                                 const SizedBox(height: 20),
+
+                                // Info Chips
                                 Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
@@ -318,6 +333,8 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                   ],
                                 ),
                                 const SizedBox(height: 20),
+
+                                // Cuisine & Diet
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                       vertical: 8, horizontal: 12),
@@ -345,6 +362,8 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                   ),
                                 ),
                                 const SizedBox(height: 20),
+
+                                // Ingredients
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -352,7 +371,6 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                   children: [
                                     Text(
                                       'Ingredients',
-                                      // FIXED: Removed 'const' here
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
@@ -405,6 +423,8 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                   ),
                                 ),
                                 const SizedBox(height: 20),
+
+                                // Instructions
                                 Text(
                                   'Instructions',
                                   style: TextStyle(
@@ -444,6 +464,9 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                     );
                                   },
                                 ),
+
+                                // --- Notes Section Added Here ---
+                                _buildNotesSection(context),
                               ],
                             ),
                           ),
