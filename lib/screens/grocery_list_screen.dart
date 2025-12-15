@@ -167,8 +167,7 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
     try {
       await _supabase
           .from('grocery_items')
-          .update({'checked': newCheckedState})
-          .eq('id', itemId);
+          .update({'checked': newCheckedState}).eq('id', itemId);
 
       setState(() {
         _groceryItems[index]['checked'] = newCheckedState;
@@ -216,7 +215,7 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: editCategory,
+                initialValue: editCategory,
                 decoration: const InputDecoration(
                   labelText: 'Category',
                   border: OutlineInputBorder(),
@@ -263,15 +262,15 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
                       'category': editCategory,
                     };
                   });
-
+                  if (!mounted) return;
                   Navigator.pop(context);
                 } catch (e) {
                   debugPrint('Error updating item: $e');
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error updating item: $e')),
-                    );
-                  }
+                  if (!mounted) return;
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error updating item: $e')),
+                  );
                 }
               },
             ),
@@ -399,7 +398,8 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
             onSelected: (value) => setState(() => _sortBy = value),
             itemBuilder: (_) => const [
               PopupMenuItem(value: 'added', child: Text('Sort by: Date Added')),
-              PopupMenuItem(value: 'category', child: Text('Sort by: Category')),
+              PopupMenuItem(
+                  value: 'category', child: Text('Sort by: Category')),
               PopupMenuItem(value: 'name', child: Text('Sort by: Name')),
             ],
           ),
@@ -455,7 +455,7 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _selectedCategory,
+                        initialValue: _selectedCategory,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           filled: true,
@@ -523,9 +523,10 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
 
                       // Update timestamps to maintain order
                       for (int i = 0; i < _groceryItems.length; i++) {
-                        final newTimestamp = DateTime.now().millisecondsSinceEpoch + i;
+                        final newTimestamp =
+                            DateTime.now().millisecondsSinceEpoch + i;
                         _groceryItems[i]['timestamp'] = newTimestamp;
-                        
+
                         // Update in database
                         try {
                           await _supabase.from('grocery_items').update({
@@ -556,9 +557,8 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
                           margin: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 4),
                           elevation: item['checked'] ? 0 : 2,
-                          color: item['checked']
-                              ? Colors.grey[300]
-                              : Colors.white,
+                          color:
+                              item['checked'] ? Colors.grey[300] : Colors.white,
                           child: ListTile(
                             leading: Checkbox(
                               value: item['checked'],
