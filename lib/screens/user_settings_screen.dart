@@ -1,5 +1,4 @@
-///lib/screens/user_settings_screen.dart
-library;
+// lib/screens/user_settings_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -50,70 +49,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDark = themeProvider.isDarkMode;
     
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Welcome, ${userName.isNotEmpty ? userName : user?.email ?? "User"}'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-            onPressed: _showLogoutDialog,
-          ),
-        ],
-      ),
-      body: ListView(
-        children: <Widget>[
-          // Profile Section
-          _buildProfileSection(isDark, userEmail),
-          
-          const Divider(height: 1),
-          
-          // Settings Section
-          _buildSectionHeader('Preferences', isDark),
-          
-          ListTile(
-            leading: const Icon(Icons.dark_mode),
-            title: const Text('Dark Mode'),
-            trailing: Switch(
-              value: themeProvider.isDarkMode,
-              onChanged: (bool value) {
-                themeProvider.toggleTheme(value);
-              },
-              activeColor: const Color(0xFF839788),
+      // FIXED: Removed AppBar
+      // FIXED: Wrapped body in SafeArea
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Custom Header - "Welcome" text removed, only Logout remains
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end, // Aligns button to the right
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.logout),
+                    tooltip: 'Logout',
+                    onPressed: _showLogoutDialog,
+                  ),
+                ],
+              ),
             ),
-          ),
-          
-          const Divider(height: 1),
-          
-          _buildSectionHeader('About', isDark),
-          
-          ListTile(
-            leading: const Icon(Icons.info),
-            title: const Text('About'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AboutScreen(),
-                ),
-              );
-            },
-          ),
-          
-          ListTile(
-            leading: const Icon(Icons.privacy_tip),
-            title: const Text('Privacy Policy'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const PrivacyPolicyScreen(),
-                ),
-              );
-            },
-          ),
-        ],
+            
+            const Divider(height: 1),
+            
+            // Settings List
+            Expanded(
+              child: ListView(
+                children: <Widget>[
+                  // Profile Section
+                  _buildProfileSection(isDark, userEmail),
+                  
+                  const Divider(height: 1),
+                  
+                  // Settings Section
+                  _buildSectionHeader('Preferences', isDark),
+                  
+                  ListTile(
+                    leading: const Icon(Icons.dark_mode),
+                    title: const Text('Dark Mode'),
+                    trailing: Switch(
+                      value: themeProvider.isDarkMode,
+                      onChanged: (bool value) {
+                        themeProvider.toggleTheme(value);
+                      },
+                      activeColor: const Color(0xFF839788),
+                    ),
+                  ),
+                  
+                  const Divider(height: 1),
+                  
+                  _buildSectionHeader('About', isDark),
+                  
+                  ListTile(
+                    leading: const Icon(Icons.info),
+                    title: const Text('About'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AboutScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  
+                  ListTile(
+                    leading: const Icon(Icons.privacy_tip),
+                    title: const Text('Privacy Policy'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PrivacyPolicyScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -297,37 +314,69 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
+  late TextEditingController _emailController;
   late String _avatarUrl;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.currentName);
+    _emailController = TextEditingController(text: widget.userEmail);
     _avatarUrl = widget.currentAvatar;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
-  void _saveProfile() {
+  void _saveProfile() async {
     if (_formKey.currentState!.validate()) {
+      final newEmail = _emailController.text.trim();
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      
+      // Check if email has changed
+      if (newEmail != widget.userEmail && currentUser != null) {
+        try {
+          // Update email in Supabase Auth
+          await Supabase.instance.client.auth.updateUser(
+            UserAttributes(email: newEmail),
+          );
+          
+          if (!mounted) return;
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile updated! Check your new email to confirm the change.'),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error updating email: $e')),
+          );
+          return;
+        }
+      }
+      
       // Return the updated profile data
       Navigator.pop(context, {
         'name': _nameController.text,
         'avatar': _avatarUrl,
       });
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully')),
-      );
+      if (newEmail == widget.userEmail) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully')),
+        );
+      }
     }
   }
 
   String _getInitials(String name) {
-    // Trim whitespace and filter out empty strings resulting from multiple spaces
     if (name.trim().isEmpty) {
       return 'U';
     }
@@ -343,8 +392,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
-    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Profile'),
@@ -394,7 +441,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         child: IconButton(
                           icon: const Icon(Icons.camera_alt, size: 20),
                           onPressed: () {
-                            // Implement image picker
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Image picker not implemented yet'),
@@ -425,6 +471,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your name';
+                    }
+                    return null;
+                  },
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Email Field (editable)
+                TextFormField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email),
+                    hintText: 'Enter your email',
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email';
+                    }
+                    if (!value.contains('@')) {
+                      return 'Please enter a valid email';
                     }
                     return null;
                   },
@@ -462,8 +530,6 @@ class AboutScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
-    
     return Scaffold(
       appBar: AppBar(
         title: const Text('About'),

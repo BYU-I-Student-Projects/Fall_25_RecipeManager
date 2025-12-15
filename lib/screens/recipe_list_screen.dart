@@ -46,13 +46,11 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
     super.dispose();
   }
 
-  // === Added Missing Method ===
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       Provider.of<RecipeProvider>(context, listen: false).fetchMoreRecipes();
     }
   }
-  // ============================
 
   // Client-side filter for search only
   List<Recipe> _filterRecipesBySearch(List<Recipe> recipes) {
@@ -215,9 +213,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Recipes'),
-      ),
+      // Removed AppBar
       body: SafeArea(
         child: recipeProvider.isLoading && recipeProvider.recipes.isEmpty
             ? const Center(child: CircularProgressIndicator())
@@ -225,7 +221,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                 children: [
                   // Search Bar and Filter Icons
                   Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       child: _isSearching

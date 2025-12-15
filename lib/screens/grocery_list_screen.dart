@@ -392,240 +392,252 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
     final sortedItems = _getSortedItems();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Grocery List'),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.sort),
-            onSelected: (value) => setState(() => _sortBy = value),
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'added', child: Text('Sort by: Date Added')),
-              PopupMenuItem(
-                  value: 'category', child: Text('Sort by: Category')),
-              PopupMenuItem(value: 'name', child: Text('Sort by: Name')),
-            ],
-          ),
-          if (_groceryItems.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.delete_sweep),
-              tooltip: 'Clear All',
-              onPressed: _clearAll,
-            ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // ---------- ADD ITEM UI ----------
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: TextField(
-                        controller: _itemController,
-                        decoration: InputDecoration(
-                          hintText: 'Item name',
-                          border: OutlineInputBorder(),
-                          filled: true,
-                          fillColor: theme.inputDecorationTheme.fillColor,
+      // Removed AppBar
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Custom Header to replace AppBar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Row(
+                    children: [
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.sort),
+                        onSelected: (value) => setState(() => _sortBy = value),
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(value: 'added', child: Text('Sort by: Date Added')),
+                          PopupMenuItem(
+                              value: 'category', child: Text('Sort by: Category')),
+                          PopupMenuItem(value: 'name', child: Text('Sort by: Name')),
+                        ],
+                      ),
+                      if (_groceryItems.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(Icons.delete_sweep),
+                          tooltip: 'Clear All',
+                          onPressed: _clearAll,
                         ),
-                        onSubmitted: (_) => _addItem(),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 1,
-                      child: TextField(
-                        controller: _quantityController,
-                        decoration: InputDecoration(
-                          hintText: 'Qty',
-                          border: OutlineInputBorder(),
-                          filled: true,
-                          fillColor: theme.inputDecorationTheme.fillColor,
-                        ),
-                        keyboardType: TextInputType.number,
-                        onSubmitted: (_) => _addItem(),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _selectedCategory,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(),
-                          filled: true,
-                          fillColor: theme.inputDecorationTheme.fillColor,
-                        ),
-                        items: _categories
-                            .map((cat) => DropdownMenuItem(
-                                  value: cat,
-                                  child: Row(
-                                    children: [
-                                      Icon(_getCategoryIcon(cat), size: 20),
-                                      const SizedBox(width: 8),
-                                      Text(cat),
-                                    ],
-                                  ),
-                                ))
-                            .toList(),
-                        onChanged: (value) =>
-                            setState(() => _selectedCategory = value!),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: _addItem,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.primaryColor,
-                        padding: const EdgeInsets.all(16),
-                      ),
-                      child: Icon(
-                        Icons.add,
-                        color: isDark ? Colors.white : Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // ---------- LIST ----------
-          Expanded(
-            child: _groceryItems.isEmpty
-                ? Center(
-                    child: Text(
-                      'No items yet!\nAdd something to get started.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: theme.textTheme.bodyMedium?.color,
-                      ),
-                    ),
+                    ],
                   )
-                : ReorderableListView.builder(
-                    buildDefaultDragHandles: false,
-                    itemCount: sortedItems.length,
-                    onReorder: (oldIndex, newIndex) async {
-                      final sorted = _getSortedItems();
-                      final movedItem = sorted[oldIndex];
-
-                      if (newIndex > oldIndex) newIndex--;
-
-                      _groceryItems.remove(movedItem);
-
-                      if (newIndex >= sorted.length) {
-                        _groceryItems.add(movedItem);
-                      } else {
-                        final target = sorted[newIndex];
-                        final targetIndex = _groceryItems.indexOf(target);
-                        _groceryItems.insert(targetIndex, movedItem);
-                      }
-
-                      // Update timestamps to maintain order
-                      for (int i = 0; i < _groceryItems.length; i++) {
-                        final newTimestamp =
-                            DateTime.now().millisecondsSinceEpoch + i;
-                        _groceryItems[i]['timestamp'] = newTimestamp;
-
-                        // Update in database
-                        try {
-                          await _supabase.from('grocery_items').update({
-                            'timestamp': newTimestamp,
-                          }).eq('id', _groceryItems[i]['id']);
-                        } catch (e) {
-                          debugPrint('Error updating order: $e');
-                        }
-                      }
-
-                      setState(() {});
-                    },
-                    itemBuilder: (_, index) {
-                      final item = sortedItems[index];
-                      final actualIndex = _groceryItems.indexOf(item);
-
-                      return Dismissible(
-                        key: Key(item['id'].toString()),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          color: Colors.red,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          child: const Icon(Icons.delete, color: Colors.white),
+                ],
+              ),
+            ),
+        
+            // ---------- ADD ITEM UI ----------
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: TextField(
+                          controller: _itemController,
+                          decoration: InputDecoration(
+                            hintText: 'Item name',
+                            border: OutlineInputBorder(),
+                            filled: true,
+                            fillColor: theme.inputDecorationTheme.fillColor,
+                          ),
+                          onSubmitted: (_) => _addItem(),
                         ),
-                        onDismissed: (_) => _deleteItem(actualIndex),
-                        child: Card(
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 4),
-                          elevation: item['checked'] ? 0 : 2,
-                          color: item['checked']
-                              ? (isDark ? Colors.grey[800] : Colors.grey[300])
-                              : theme.cardColor,
-                          child: ListTile(
-                            leading: Checkbox(
-                              value: item['checked'],
-                              activeColor: theme.primaryColor,
-                              onChanged: (_) => _toggleCheck(actualIndex),
-                            ),
-                            title: Text(
-                              item['name'],
-                              style: TextStyle(
-                                decoration: item['checked']
-                                    ? TextDecoration.lineThrough
-                                    : TextDecoration.none,
-                                color: item['checked']
-                                    ? (isDark ? Colors.grey[500] : Colors.grey)
-                                    : theme.textTheme.bodyLarge?.color,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 1,
+                        child: TextField(
+                          controller: _quantityController,
+                          decoration: InputDecoration(
+                            hintText: 'Qty',
+                            border: OutlineInputBorder(),
+                            filled: true,
+                            fillColor: theme.inputDecorationTheme.fillColor,
+                          ),
+                          keyboardType: TextInputType.number,
+                          onSubmitted: (_) => _addItem(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedCategory,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            filled: true,
+                            fillColor: theme.inputDecorationTheme.fillColor,
+                          ),
+                          items: _categories
+                              .map((cat) => DropdownMenuItem(
+                                    value: cat,
+                                    child: Row(
+                                      children: [
+                                        Icon(_getCategoryIcon(cat), size: 20),
+                                        const SizedBox(width: 8),
+                                        Text(cat),
+                                      ],
+                                    ),
+                                  ))
+                              .toList(),
+                          onChanged: (value) =>
+                              setState(() => _selectedCategory = value!),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _addItem,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.primaryColor,
+                          padding: const EdgeInsets.all(16),
+                        ),
+                        child: Icon(
+                          Icons.add,
+                          color: isDark ? Colors.white : Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // ---------- LIST ----------
+            Expanded(
+              child: _groceryItems.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No items yet!\nAdd something to get started.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: theme.textTheme.bodyMedium?.color,
+                        ),
+                      ),
+                    )
+                  : ReorderableListView.builder(
+                      buildDefaultDragHandles: false,
+                      itemCount: sortedItems.length,
+                      onReorder: (oldIndex, newIndex) async {
+                        final sorted = _getSortedItems();
+                        final movedItem = sorted[oldIndex];
+
+                        if (newIndex > oldIndex) newIndex--;
+
+                        _groceryItems.remove(movedItem);
+
+                        if (newIndex >= sorted.length) {
+                          _groceryItems.add(movedItem);
+                        } else {
+                          final target = sorted[newIndex];
+                          final targetIndex = _groceryItems.indexOf(target);
+                          _groceryItems.insert(targetIndex, movedItem);
+                        }
+
+                        // Update timestamps to maintain order
+                        for (int i = 0; i < _groceryItems.length; i++) {
+                          final newTimestamp =
+                              DateTime.now().millisecondsSinceEpoch + i;
+                          _groceryItems[i]['timestamp'] = newTimestamp;
+
+                          // Update in database
+                          try {
+                            await _supabase.from('grocery_items').update({
+                              'timestamp': newTimestamp,
+                            }).eq('id', _groceryItems[i]['id']);
+                          } catch (e) {
+                            debugPrint('Error updating order: $e');
+                          }
+                        }
+
+                        setState(() {});
+                      },
+                      itemBuilder: (_, index) {
+                        final item = sortedItems[index];
+                        final actualIndex = _groceryItems.indexOf(item);
+
+                        return Dismissible(
+                          key: Key(item['id'].toString()),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            color: Colors.red,
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            child: const Icon(Icons.delete, color: Colors.white),
+                          ),
+                          onDismissed: (_) => _deleteItem(actualIndex),
+                          child: Card(
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 4),
+                            elevation: item['checked'] ? 0 : 2,
+                            color: item['checked']
+                                ? (isDark ? Colors.grey[800] : Colors.grey[300])
+                                : theme.cardColor,
+                            child: ListTile(
+                              leading: Checkbox(
+                                value: item['checked'],
+                                activeColor: theme.primaryColor,
+                                onChanged: (_) => _toggleCheck(actualIndex),
                               ),
-                            ),
-                            subtitle: Row(
-                              children: [
-                                Icon(
-                                  _getCategoryIcon(item['category']),
-                                  size: 14,
-                                  color: theme.textTheme.bodyMedium?.color,
+                              title: Text(
+                                item['name'],
+                                style: TextStyle(
+                                  decoration: item['checked']
+                                      ? TextDecoration.lineThrough
+                                      : TextDecoration.none,
+                                  color: item['checked']
+                                      ? (isDark ? Colors.grey[500] : Colors.grey)
+                                      : theme.textTheme.bodyLarge?.color,
                                 ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${item['category']} • Qty: ${item['quantity']}',
-                                  style: TextStyle(
+                              ),
+                              subtitle: Row(
+                                children: [
+                                  Icon(
+                                    _getCategoryIcon(item['category']),
+                                    size: 14,
                                     color: theme.textTheme.bodyMedium?.color,
                                   ),
-                                ),
-                              ],
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit, size: 20),
-                                  color: theme.primaryColor,
-                                  onPressed: () => _editItem(actualIndex),
-                                ),
-                                ReorderableDragStartListener(
-                                  index: index,
-                                  child: const Padding(
-                                    padding:
-                                        EdgeInsets.symmetric(horizontal: 8),
-                                    child: _GrabHandle(),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${item['category']} • Qty: ${item['quantity']}',
+                                    style: TextStyle(
+                                      color: theme.textTheme.bodyMedium?.color,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, size: 20),
+                                    color: theme.primaryColor,
+                                    onPressed: () => _editItem(actualIndex),
+                                  ),
+                                  ReorderableDragStartListener(
+                                    index: index,
+                                    child: const Padding(
+                                      padding:
+                                          EdgeInsets.symmetric(horizontal: 8),
+                                      child: _GrabHandle(),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
