@@ -52,8 +52,17 @@ class RecipeListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Detect dark mode
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      // Add a border in dark mode to separate cards from the background
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isDark ? BorderSide(color: Colors.grey[800]!) : BorderSide.none,
+      ),
+      elevation: 2,
       child: InkWell(
         onTap: () {
           showDialog(
@@ -98,7 +107,7 @@ class RecipeListItem extends StatelessWidget {
 
                   // More Menu (Edit/Delete)
                   PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert, color: Colors.grey),
+                    icon: Icon(Icons.more_vert, color: isDark ? Colors.white70 : Colors.grey),
                     onSelected: (value) {
                       if (value == 'edit') {
                         Navigator.push(
@@ -150,7 +159,7 @@ class RecipeListItem extends StatelessWidget {
                     ),
                     child: Text(
                       recipe.cuisine,
-                      style: const TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -164,7 +173,7 @@ class RecipeListItem extends StatelessWidget {
                       ),
                       child: Text(
                         recipe.dietRestrictions,
-                        style: const TextStyle(fontSize: 12),
+                        style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black),
                       ),
                     ),
                 ],
@@ -177,14 +186,14 @@ class RecipeListItem extends StatelessWidget {
                 runSpacing: 4,
                 children: [
                   _buildInfoItem(
-                      Icons.schedule, '${recipe.prepTime + recipe.cookTime} min'),
-                  _buildInfoItem(Icons.restaurant, '${recipe.servings} servings'),
+                      Icons.schedule, '${recipe.prepTime + recipe.cookTime} min', isDark),
+                  _buildInfoItem(Icons.restaurant, '${recipe.servings} servings', isDark),
                   _buildInfoItem(Icons.local_fire_department,
-                      '${recipe.calPerServing} cal'),
+                      '${recipe.calPerServing} cal', isDark),
                 ],
               ),
 
-              // Meal Types
+              // Meal Types - IMPROVED VISIBILITY
               if (recipe.mealTypes.isNotEmpty &&
                   !(recipe.mealTypes.length == 1 &&
                       recipe.mealTypes[0] == 'All'))
@@ -198,12 +207,17 @@ class RecipeListItem extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.grey[200],
+                          // Darker grey in dark mode, light grey in light mode
+                          color: isDark ? Colors.grey[700] : Colors.grey[200],
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           mealType,
-                          style: const TextStyle(fontSize: 11),
+                          style: TextStyle(
+                            fontSize: 11,
+                            // White text in dark mode, black in light mode
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
                         ),
                       );
                     }).toList(),
@@ -216,15 +230,15 @@ class RecipeListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoItem(IconData icon, String text) {
+  Widget _buildInfoItem(IconData icon, String text, bool isDark) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: Colors.grey[600]),
+        Icon(icon, size: 16, color: isDark ? Colors.grey[400] : Colors.grey[600]),
         const SizedBox(width: 4),
         Text(
           text,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[600]),
         ),
       ],
     );
