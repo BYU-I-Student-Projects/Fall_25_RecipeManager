@@ -6,10 +6,16 @@ import '../models/recipe_model.dart';
 class RecipeProvider with ChangeNotifier {
   final _supabase = Supabase.instance.client;
   List<Recipe> _recipes = [];
-  
+
+  // Variables for the recipe notes function
+  String _recipeNotes = '';
+  String get recipeNotes => _recipeNotes;
+  bool _isLoadingNotes = false;
+  bool get isLoadingNotes => _isLoadingNotes;
+
   // Use two separate flags for different loading states
-  bool _isLoading = false;      // For the initial, full-screen load
-  bool _isLoadingMore = false;  // For loading more items at the bottom
+  bool _isLoading = false; // For the initial, full-screen load
+  bool _isLoadingMore = false; // For loading more items at the bottom
 
   bool _hasMore = true;
   int _page = 1;
@@ -29,14 +35,15 @@ class RecipeProvider with ChangeNotifier {
   bool _isLoadingDetails = false;
   bool get isLoadingDetails => _isLoadingDetails;
 
-  Future<void> fetchRecipes({String? cuisineFilter, String? mealTypeFilter}) async {
+  Future<void> fetchRecipes(
+      {String? cuisineFilter, String? mealTypeFilter}) async {
     _isLoading = true;
     _page = 1; // Reset to first page
     _hasMore = true;
     _recipes = [];
     _activeCuisineFilter = cuisineFilter;
     _activeMealTypeFilter = mealTypeFilter;
-    
+
     if (hasListeners) {
       notifyListeners();
     }
@@ -49,7 +56,8 @@ class RecipeProvider with ChangeNotifier {
 
       // Apply cuisine filter if provided
       if (cuisineFilter != null && cuisineFilter != 'All') {
-        query = query.or('cuisine.ilike.%$cuisineFilter%,diet_restric.ilike.%$cuisineFilter%');
+        query = query.or(
+            'cuisine.ilike.%$cuisineFilter%,diet_restric.ilike.%$cuisineFilter%');
       }
 
       // Apply range based on whether we're filtering
@@ -63,16 +71,17 @@ class RecipeProvider with ChangeNotifier {
       }
 
       final response = await rangedQuery;
-      
+
       final List<dynamic> data = response;
-      var allRecipes = data.map((item) => Recipe.fromMap(item as Map<String, dynamic>)).toList();
+      var allRecipes = data
+          .map((item) => Recipe.fromMap(item as Map<String, dynamic>))
+          .toList();
 
       // Apply meal type filter in code (since Supabase join filtering is complex)
       if (mealTypeFilter != null && mealTypeFilter != 'All') {
         allRecipes = allRecipes.where((recipe) {
-          return recipe.mealTypes.any((mealType) => 
-            mealType.toLowerCase() == mealTypeFilter.toLowerCase()
-          );
+          return recipe.mealTypes.any((mealType) =>
+              mealType.toLowerCase() == mealTypeFilter.toLowerCase());
         }).toList();
       }
 
@@ -97,7 +106,10 @@ class RecipeProvider with ChangeNotifier {
   // Fetch more recipes for infinite scrolling
   Future<void> fetchMoreRecipes() async {
     // Don't fetch more if we're filtering or already loading
-    if (_isLoadingMore || !_hasMore || _activeMealTypeFilter != null || _activeCuisineFilter != null) {
+    if (_isLoadingMore ||
+        !_hasMore ||
+        _activeMealTypeFilter != null ||
+        _activeCuisineFilter != null) {
       return;
     }
 
@@ -112,29 +124,28 @@ class RecipeProvider with ChangeNotifier {
     final startTime = DateTime.now();
 
     try {
-      final response = await _supabase
-          .from('recipes')
-          .select()
-          .range((_page - 1) * _limit, _page * _limit - 1); // Fetch the next batch
+      final response = await _supabase.from('recipes').select().range(
+          (_page - 1) * _limit, _page * _limit - 1); // Fetch the next batch
 
       // Calculate how long the network request took
       final networkTime = DateTime.now().difference(startTime);
-      
+
       // If the request was faster than our minimum, wait the remaining time
       if (networkTime < minDisplayTime) {
         await Future.delayed(minDisplayTime - networkTime);
       }
 
       final List<dynamic> data = response;
-      final newRecipes = data.map((item) => Recipe.fromMap(item as Map<String, dynamic>)).toList();
-      
+      final newRecipes = data
+          .map((item) => Recipe.fromMap(item as Map<String, dynamic>))
+          .toList();
+
       _recipes.addAll(newRecipes); // Add the new recipes to the existing list
 
       // If we received fewer recipes than the limit, we've reached the end
       if (newRecipes.length < _limit) {
         _hasMore = false;
       }
-
     } catch (error) {
       debugPrint('Error fetching more recipes: $error');
     }
@@ -149,6 +160,10 @@ class RecipeProvider with ChangeNotifier {
   Future<void> fetchRecipeById(int id) async {
     _isLoadingDetails = true;
     _selectedRecipe = null;
+
+    // FIX (Persistence): Clear the note state immediately
+    _recipeNotes = '';
+
     notifyListeners();
 
     try {
@@ -159,6 +174,9 @@ class RecipeProvider with ChangeNotifier {
           .single();
 
       _selectedRecipe = Recipe.fromMap(response);
+
+      // CRITICAL: Fetch the notes for the newly selected recipe
+      await fetchNotesForRecipe(id);
     } on PostgrestException catch (e) {
       debugPrint('Error fetching recipe by ID: ${e.message}');
     } finally {
@@ -205,7 +223,8 @@ class RecipeProvider with ChangeNotifier {
           .update(updatedRecipe.toMap())
           .eq('id', recipeId);
 
-      final index = _recipes.indexWhere((recipe) => recipe.id == updatedRecipe.id);
+      final index =
+          _recipes.indexWhere((recipe) => recipe.id == updatedRecipe.id);
 
       if (index != -1) {
         _recipes[index] = updatedRecipe;
@@ -233,6 +252,59 @@ class RecipeProvider with ChangeNotifier {
     } on PostgrestException catch (e) {
       debugPrint('Error deleting recipe: ${e.message}');
       return false;
+    }
+  }
+
+  Future<void> fetchNotesForRecipe(int recipeId) async {
+    _isLoadingNotes = true;
+    _recipeNotes = '';
+
+    notifyListeners();
+
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
+      _recipeNotes = '';
+      _isLoadingNotes = false;
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final res = await _supabase
+          .from('recipe_notes')
+          .select()
+          .eq('recipe_id', recipeId)
+          .eq('user_uuid', user.id)
+          .maybeSingle();
+
+      _recipeNotes = res?['note'] ?? '';
+    } catch (e) {
+      debugPrint('Error fetching notes: $e');
+    }
+
+    _isLoadingNotes = false;
+    notifyListeners();
+  }
+
+  Future<void> saveNotes(int recipeId, String content) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
+      debugPrint('🚨 Error saving note: User is not logged in.');
+      return;
+    }
+
+    _recipeNotes = content;
+    notifyListeners();
+
+    try {
+      await _supabase.from('recipe_notes').upsert({
+        'recipe_id': recipeId,
+        'user_uuid': user.id,
+        'note': content,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('🚨 CRITICAL Error saving notes: $e');
     }
   }
 }
