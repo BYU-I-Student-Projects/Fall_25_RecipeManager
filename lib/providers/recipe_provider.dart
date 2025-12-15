@@ -348,12 +348,16 @@ class RecipeProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      await _supabase.from('recipe_notes').upsert({
-        'recipe_id': recipeId,
-        'user_uuid': user.id,
-        'note': content,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
+      // FIX: Added onConflict to handle unique constraint violations
+      await _supabase.from('recipe_notes').upsert(
+        {
+          'recipe_id': recipeId,
+          'user_uuid': user.id,
+          'note': content,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        onConflict: 'recipe_id,user_uuid',
+      );
     } catch (e) {
       debugPrint('🚨 CRITICAL Error saving notes: $e');
     }

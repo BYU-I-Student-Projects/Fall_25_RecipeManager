@@ -1,8 +1,11 @@
 // lib/widgets/recipe_list_item.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/recipe_model.dart';
 import '../screens/recipe_detail_screen.dart';
+import '../screens/add_recipe_screen.dart';
+import '../providers/recipe_provider.dart';
 import '../widgets/grocery_helper.dart';
 
 class RecipeListItem extends StatelessWidget {
@@ -10,12 +13,47 @@ class RecipeListItem extends StatelessWidget {
 
   const RecipeListItem({super.key, required this.recipe});
 
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Recipe?'),
+        content: Text('Are you sure you want to delete "${recipe.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      final success = await Provider.of<RecipeProvider>(context, listen: false)
+          .deleteRecipe(recipe.id);
+      
+      if (context.mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Recipe deleted')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to delete recipe')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      // Removed the duplicate ListTile child and Invalid onTap here.
-      // Kept the custom InkWell layout.
       child: InkWell(
         onTap: () {
           showDialog(
@@ -29,11 +67,11 @@ class RecipeListItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title and Quick Add Button
+              // Title, Quick Add, and Menu Row
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Title
                   Expanded(
                     child: Text(
                       recipe.title,
@@ -44,6 +82,8 @@ class RecipeListItem extends StatelessWidget {
                       ),
                     ),
                   ),
+                  
+                  // Grocery Add Button
                   IconButton(
                     icon: const Icon(Icons.add_shopping_cart),
                     color: const Color(0xFF839788),
@@ -54,6 +94,45 @@ class RecipeListItem extends StatelessWidget {
                     tooltip: 'Add to Grocery List',
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
+                  ),
+
+                  // More Menu (Edit/Delete)
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: Colors.grey),
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AddRecipeScreen(recipeToEdit: recipe),
+                          ),
+                        );
+                      } else if (value == 'delete') {
+                        _confirmDelete(context);
+                      }
+                    },
+                    itemBuilder: (BuildContext context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, size: 20),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, size: 20, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Delete', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -66,7 +145,7 @@ class RecipeListItem extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFBFD7EA).withValues(alpha: 0.5),
+                      color: const Color(0xFFBFD7EA).withOpacity(0.5),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -80,7 +159,7 @@ class RecipeListItem extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFBAA898).withValues(alpha: 0.3),
+                        color: const Color(0xFFBAA898).withOpacity(0.3),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(

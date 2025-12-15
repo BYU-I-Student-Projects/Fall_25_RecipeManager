@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/recipe_provider.dart';
+import '../screens/add_recipe_screen.dart'; // Needed for navigation
 import '../widgets/grocery_helper.dart';
 import '../widgets/star_rating_picker.dart';
 
@@ -67,6 +68,44 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
     }
   }
 
+  Future<void> _deleteRecipe(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Recipe?'),
+        content: const Text('Are you sure you want to delete this recipe?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final success = await Provider.of<RecipeProvider>(context, listen: false)
+          .deleteRecipe(widget.recipeId);
+
+      if (mounted) {
+        if (success) {
+          Navigator.pop(context); // Close dialog on success
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Recipe deleted')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to delete recipe')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   void dispose() {
     _notesController.dispose();
@@ -102,7 +141,7 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
     );
   }
 
-  // --- Restored Notes Section ---
+  // --- Notes Section ---
   Widget _buildNotesSection(BuildContext context) {
     final recipeProvider = Provider.of<RecipeProvider>(context);
     final theme = Theme.of(context);
@@ -205,6 +244,52 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                     ),
                   ),
                 ),
+                
+                // --- Edit / Delete Menu ---
+                if (recipe != null)
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert, color: theme.iconTheme.color),
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        // Navigate to edit screen
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AddRecipeScreen(recipeToEdit: recipe),
+                          ),
+                        );
+                        // Refresh details when returning
+                        if (mounted) {
+                          recipeProvider.fetchRecipeById(widget.recipeId);
+                        }
+                      } else if (value == 'delete') {
+                        _deleteRecipe(context);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, size: 20),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, size: 20, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Delete', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
                 IconButton(
                   icon: Icon(Icons.close, color: theme.iconTheme.color),
                   onPressed: () => Navigator.pop(context),
@@ -465,7 +550,7 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                   },
                                 ),
 
-                                // --- Notes Section Added Here ---
+                                // Notes Section
                                 _buildNotesSection(context),
                               ],
                             ),

@@ -1,4 +1,4 @@
-// lib/screens/add_recipe.dart
+// lib/screens/add_recipe_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/recipe_model.dart';
@@ -14,6 +14,7 @@ class AddRecipeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEditing = recipeToEdit != null;
     final theme = Theme.of(context);
+    final canPop = Navigator.canPop(context);
 
     return Scaffold(
       // Removed AppBar
@@ -23,6 +24,27 @@ class AddRecipeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Custom Header
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: Row(
+                  children: [
+                    // Only show back button if we can go back (i.e. we are editing)
+                    if (canPop) ...[
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back),
+                        onPressed: () => Navigator.pop(context),
+                        tooltip: 'Back',
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      isEditing ? 'Edit Recipe' : 'Add New Recipe',
+                      style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
               RecipeForm(
                 initialRecipe: recipeToEdit,
                 submitButtonText: isEditing ? 'Save Changes' : 'Add Recipe',
