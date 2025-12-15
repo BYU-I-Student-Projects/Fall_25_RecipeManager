@@ -111,37 +111,99 @@ class _RecipeFormState extends State<RecipeForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildTextField(controller: _titleController, label: 'Recipe Title', isRequired: true),
+          _buildTextField(
+            controller: _titleController, 
+            label: 'Recipe Title', 
+            isRequired: true,
+            tooltip: 'The name of your dish (e.g. Spaghetti Bolognese).',
+          ),
           const SizedBox(height: 16),
-          _buildTextField(controller: _descriptionController, label: 'Description', maxLines: 3),
+          _buildTextField(
+            controller: _descriptionController, 
+            label: 'Description', 
+            maxLines: 3,
+            tooltip: 'A short summary of the dish, history, or flavor profile.',
+          ),
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _buildTextField(controller: _cuisineController, label: 'Cuisine')),
+              Expanded(
+                child: _buildTextField(
+                  controller: _cuisineController, 
+                  label: 'Cuisine',
+                  tooltip: 'Origin style (e.g. Italian, Mexican, Thai).',
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _buildTextField(controller: _dietController, label: 'Diet')),
+              Expanded(
+                child: _buildTextField(
+                  controller: _dietController, 
+                  label: 'Diet',
+                  tooltip: 'Dietary category (e.g. Vegan, Keto, Gluten-Free).',
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _buildTextField(controller: _prepTimeController, label: 'Prep (min)', isNumber: true)),
+              Expanded(
+                child: _buildTextField(
+                  controller: _prepTimeController, 
+                  label: 'Prep (min)', 
+                  isNumber: true,
+                  tooltip: 'Minutes required to chop and prepare ingredients.',
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _buildTextField(controller: _cookTimeController, label: 'Cook (min)', isNumber: true)),
+              Expanded(
+                child: _buildTextField(
+                  controller: _cookTimeController, 
+                  label: 'Cook (min)', 
+                  isNumber: true,
+                  tooltip: 'Minutes required on the stove or in the oven.',
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _buildTextField(controller: _servingsController, label: 'Servings', isNumber: true)),
+              Expanded(
+                child: _buildTextField(
+                  controller: _servingsController, 
+                  label: 'Servings', 
+                  isNumber: true,
+                  tooltip: 'Number of people this recipe feeds.',
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _buildTextField(controller: _caloriesController, label: 'Calories', isNumber: true)),
+              Expanded(
+                child: _buildTextField(
+                  controller: _caloriesController, 
+                  label: 'Calories', 
+                  isNumber: true,
+                  tooltip: 'Approximate calories per single serving.',
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
-          _buildTextField(controller: _ingredientsController, label: 'Ingredients (one per line)', maxLines: 5, isRequired: true),
+          _buildTextField(
+            controller: _ingredientsController, 
+            label: 'Ingredients', 
+            maxLines: 5, 
+            isRequired: true,
+            tooltip: 'List each ingredient on a new line.\nExample:\n1 cup flour\n2 eggs\n1/2 tsp salt',
+          ),
           const SizedBox(height: 16),
-          _buildTextField(controller: _instructionsController, label: 'Instructions (one per line)', maxLines: 5, isRequired: true),
+          _buildTextField(
+            controller: _instructionsController, 
+            label: 'Instructions', 
+            maxLines: 5, 
+            isRequired: true,
+            tooltip: 'List each cooking step on a new line.\nExample:\n1. Preheat oven\n2. Mix dry ingredients',
+          ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: _handleSubmit,
@@ -162,6 +224,7 @@ class _RecipeFormState extends State<RecipeForm> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
+    String? tooltip,
     int maxLines = 1,
     bool isNumber = false,
     bool isRequired = false,
@@ -169,10 +232,22 @@ class _RecipeFormState extends State<RecipeForm> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     
+    // Determine input type
+    TextInputType inputType;
+    if (isNumber) {
+      inputType = TextInputType.number;
+    } else if (maxLines > 1) {
+      inputType = TextInputType.multiline;
+    } else {
+      inputType = TextInputType.text;
+    }
+
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
-      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      keyboardType: inputType,
+      // If multiline, allow "Enter" to create new line instead of submitting/next
+      textInputAction: maxLines > 1 ? TextInputAction.newline : TextInputAction.next,
       style: TextStyle(
         color: theme.textTheme.bodyLarge?.color,
       ),
@@ -203,6 +278,22 @@ class _RecipeFormState extends State<RecipeForm> {
           ),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        // Add info tooltip if provided
+        suffixIcon: tooltip != null
+            ? Tooltip(
+                message: tooltip,
+                preferBelow: false,
+                triggerMode: TooltipTriggerMode.tap,
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.all(12),
+                showDuration: const Duration(seconds: 4),
+                child: Icon(
+                  Icons.info_outline,
+                  color: isDark ? Colors.grey[400] : Colors.grey[500],
+                  size: 22,
+                ),
+              )
+            : null,
       ),
       validator: (value) {
         if (isRequired && (value == null || value.trim().isEmpty)) {
