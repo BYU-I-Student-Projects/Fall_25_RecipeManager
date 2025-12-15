@@ -317,6 +317,16 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                 // ===== END NEW =======================================
                                 // =====================================================
 
+                                Text(
+                                  recipe.description!,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontStyle: FontStyle.italic,
+                                    color: textColor,
+                                    height: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
                                 // --- Quick Info ---
                                 Wrap(
                                   spacing: 8,
