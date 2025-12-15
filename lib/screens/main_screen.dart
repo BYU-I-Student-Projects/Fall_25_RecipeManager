@@ -49,7 +49,7 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = Supabase.instance.client.auth.currentUser;
+    Supabase.instance.client.auth.currentUser;
     return Scaffold(
       // Display the widget from our list based on the selected index.
       body: Center(

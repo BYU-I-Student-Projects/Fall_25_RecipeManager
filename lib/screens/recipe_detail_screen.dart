@@ -282,7 +282,7 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                 ),
                                 const SizedBox(height: 20),
                                 Text(
-                                  recipe.description!,
+                                  recipe.description,
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontStyle: FontStyle.italic,
