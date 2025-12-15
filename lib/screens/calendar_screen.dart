@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:provider/provider.dart';
+import 'package:recipe_manager/providers/theme_provider.dart';
 
 import '../providers/calendar_provider.dart';
 import '../models/calendar_model.dart';
@@ -114,11 +115,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const Color accent1 = Color(0xFFBAA898);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF839788),
         title: const Text('Calendar'),
       ),
       body: Container(
@@ -155,7 +156,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       showDialog(
                         context: context,
                         builder: (context) {
-                          // === START OF KEY CHANGE: StatefulBuilder to handle local Dialog state ===
                           return StatefulBuilder(
                             builder: (BuildContext dialogContext,
                                 StateSetter dialogSetState) {
@@ -212,7 +212,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                                   categories: categories,
                                                   mealProvider: mealProvider,
                                                   dialogSetState:
-                                                      dialogSetState, // <<< WE PASS THE LOCAL SETSTATE
+                                                      dialogSetState,
                                                 ),
                                               );
                                             }),
@@ -233,8 +233,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                           ),
                                           const SizedBox(width: 10),
                                           ElevatedButton(
-                                            onPressed:
-                                                _onSaveAllMeals, // <-- Calls the batch save function
+                                            onPressed: _onSaveAllMeals,
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor:
                                                   const Color(0xFF839788),
@@ -249,7 +248,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               );
                             },
                           );
-                          // === END OF KEY CHANGE ===
                         },
                       );
                     },
@@ -262,61 +260,85 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 }
               },
               onPageChanged: (focusedDay) => _focusedDay = focusedDay,
-              calendarStyle: const CalendarStyle(
-                todayDecoration: BoxDecoration(
+              
+              // === FIXED: All styles moved inside CalendarStyle ===
+              calendarStyle: CalendarStyle(
+                todayDecoration: const BoxDecoration(
                   color: Color(0xFF839788),
                   shape: BoxShape.circle,
                 ),
-                selectedDecoration: BoxDecoration(
-                  color: accent1,
+                // Moved from outside to here:
+                selectedDecoration: const BoxDecoration(
+                  color: Color(0xFFBAA898),
                   shape: BoxShape.circle,
                 ),
+                // Moved from outside to here:
+                defaultTextStyle: TextStyle(
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+                // Moved from outside to here:
+                weekendTextStyle: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+                // Moved from outside to here:
+                outsideTextStyle: TextStyle(
+                  color: isDark ? Colors.grey[600] : Colors.grey[400],
+                ),
               ),
-              headerStyle: const HeaderStyle(
+
+              // === FIXED: These are now correctly inside TableCalendar ===
+              headerStyle: HeaderStyle(
                 formatButtonVisible: false,
                 titleCentered: true,
+                titleTextStyle: TextStyle(
+                  color: isDark ? Colors.white : Colors.black,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
+                leftChevronIcon: Icon(
+                  Icons.chevron_left,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+                rightChevronIcon: Icon(
+                  Icons.chevron_right,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+              daysOfWeekStyle: DaysOfWeekStyle(
+                weekdayStyle: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+                weekendStyle: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+              ),
+              calendarBuilders: CalendarBuilders(
+                defaultBuilder: (context, day, focusedDay) {
+                  return Container(
+                    margin: const EdgeInsets.all(4.0),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '${day.day}',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(height: 8.0),
             Expanded(
-              child: Consumer<MealDayProvider>(
-                builder: (context, mealProvider, _) {
-                  if (mealProvider.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (_selectedDay == null) {
-                    return const Center(child: Text('No day selected'));
-                  }
-
-                  final mealsForDay = mealProvider.meals
-                      .where((m) =>
-                          m.eatDate != null &&
-                          isSameDay(m.eatDate, _selectedDay))
-                      .toList();
-
-                  if (mealsForDay.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'No meals for ${_selectedDay!.year}-${_selectedDay!.month.toString().padLeft(2, '0')}-${_selectedDay!.day.toString().padLeft(2, '0')}',
+              child: Center(
+                child: _selectedDay != null
+                    ? Text(
+                        'Selected day: ${_selectedDay!.year}-${_selectedDay!.month.toString().padLeft(2, '0')}-${_selectedDay!.day.toString().padLeft(2, '0')}',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      )
+                    : Text(
+                        'No day selected',
+                        style: Theme.of(context).textTheme.bodyLarge,
                       ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    itemCount: mealsForDay.length,
-                    itemBuilder: (context, index) {
-                      final meal = mealsForDay[index];
-                      return ListTile(
-                        title: Text(meal.mealCategory ?? 'Uncategorized'),
-                        subtitle: meal.ingredients != null &&
-                                meal.ingredients!.isNotEmpty
-                            ? Text(meal.ingredients!)
-                            : null,
-                      );
-                    },
-                  );
-                },
               ),
             ),
           ],
@@ -330,7 +352,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     required int rowIndex,
     required List<String> categories,
     required MealDayProvider mealProvider,
-    required StateSetter dialogSetState, // <<< NEW PARAMETER
+    required StateSetter dialogSetState,
   }) {
     final String? selectedCategory = _selectedCategories[rowIndex];
     final Recipe? selectedRecipe = _selectedRecipes[rowIndex];
@@ -367,7 +389,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 )
                 .toList(),
             onChanged: (value) {
-              // === WE USE dialogSetState INSTEAD OF setState() ===
               dialogSetState(() {
                 _selectedCategories[rowIndex] = value;
                 _selectedRecipes[rowIndex] =
@@ -407,14 +428,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 )
                 .toList(),
             onChanged: (recipe) {
-              // === WE USE dialogSetState INSTEAD OF setState() ===
               dialogSetState(() {
                 _selectedRecipes[rowIndex] = recipe;
               });
             },
           ),
         ),
-        // The individual Add Button has been removed.
       ],
     );
   }
