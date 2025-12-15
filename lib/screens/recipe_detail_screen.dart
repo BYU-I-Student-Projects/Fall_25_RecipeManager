@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/recipe_provider.dart';
+import '../widgets/grocery_helper.dart';
 
 class RecipeDetailDialog extends StatefulWidget {
   final int recipeId;
@@ -30,19 +31,19 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
     // --- Palette ---
     const textColor = Color(0xFF000000);
     const headingColor = Color(0xFF839788);
-    const backgroundColor = Color(0xFFEEE0CB); // Background for the dialog
+    const backgroundColor = Color(0xFFEEE0CB);
     const accent1 = Color(0xFFBAA898);
     const accent2 = Color(0xFFBFD7EA);
 
     return Dialog(
       backgroundColor: backgroundColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      insetPadding: const EdgeInsets.all(16), // Spacing from screen edges
+      insetPadding: const EdgeInsets.all(16),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
         padding: const EdgeInsets.all(20.0),
         child: Column(
-          mainAxisSize: MainAxisSize.min, // Shrink to fit content height
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // --- Header (Title + Close Button) ---
@@ -54,7 +55,7 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                   child: Text(
                     recipe?.title ?? 'Loading...',
                     style: const TextStyle(
-                      fontSize: 24, // Slightly smaller than full screen
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: headingColor,
                     ),
@@ -115,14 +116,38 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                 ),
                                 const SizedBox(height: 20),
 
-                                // --- Ingredients ---
-                                Text(
-                                  'Ingredients',
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: headingColor,
-                                  ),
+                                // --- Ingredients with Add Button ---
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Ingredients',
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: headingColor,
+                                      ),
+                                    ),
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        GroceryHelper.showAddIngredientsDialog(
+                                          context,
+                                          recipe,
+                                        );
+                                      },
+                                      icon: const Icon(Icons.add_shopping_cart, size: 18),
+                                      label: const Text('Add to List'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: headingColor,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(height: 8),
                                 ...recipe.ingredients.map(
