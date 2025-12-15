@@ -212,11 +212,10 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
   Widget build(BuildContext context) {
     final recipeProvider = Provider.of<RecipeProvider>(context);
     final filteredRecipes = _filterRecipesBySearch(recipeProvider.recipes);
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEEE0CB),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF839788),
         title: const Text('My Recipes'),
       ),
       body: SafeArea(
@@ -233,6 +232,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                           ? TextField(
                               controller: _searchController,
                               autofocus: true,
+                              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
                               decoration: InputDecoration(
                                 hintText: 'Search recipes...',
                                 prefixIcon: const Icon(Icons.search),
@@ -241,7 +241,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                                   onPressed: _toggleSearch,
                                 ),
                                 filled: true,
-                                fillColor: Colors.white,
+                                fillColor: theme.inputDecorationTheme.fillColor,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
@@ -258,10 +258,10 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                               children: [
                                 // Search Icon
                                 IconButton(
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.search,
                                     size: 28,
-                                    color: Color(0xFF839788),
+                                    color: theme.primaryColor,
                                   ),
                                   onPressed: _toggleSearch,
                                 ),
@@ -271,10 +271,10 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                                   builder: (context) => Stack(
                                     children: [
                                       IconButton(
-                                        icon: const Icon(
+                                        icon: Icon(
                                           Icons.restaurant_menu,
                                           size: 28,
-                                          color: Color(0xFF839788),
+                                          color: theme.primaryColor,
                                         ),
                                         onPressed: () => _showMealTypeFilterMenu(context),
                                       ),
@@ -300,10 +300,10 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                                   builder: (context) => Stack(
                                     children: [
                                       IconButton(
-                                        icon: const Icon(
+                                        icon: Icon(
                                           Icons.filter_list,
                                           size: 28,
-                                          color: Color(0xFF839788),
+                                          color: theme.primaryColor,
                                         ),
                                         onPressed: () => _showCuisineFilterMenu(context),
                                       ),
@@ -344,7 +344,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                                 });
                                 _applyFilters();
                               },
-                              backgroundColor: const Color(0xFF839788),
+                              backgroundColor: theme.primaryColor,
                               labelStyle: const TextStyle(color: Colors.white),
                             ),
                           if (_selectedCuisineFilter != 'All')
@@ -357,7 +357,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                                 });
                                 _applyFilters();
                               },
-                              backgroundColor: const Color(0xFF839788),
+                              backgroundColor: theme.primaryColor,
                               labelStyle: const TextStyle(color: Colors.white),
                             ),
                         ],
@@ -371,9 +371,9 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                               _searchQuery.isEmpty && _selectedCuisineFilter == 'All' && _selectedMealTypeFilter == 'All'
                                   ? 'No recipes yet'
                                   : 'No recipes found',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey,
+                                color: theme.textTheme.bodyMedium?.color,
                               ),
                             ),
                           )

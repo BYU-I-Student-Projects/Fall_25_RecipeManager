@@ -15,10 +15,8 @@ class AddRecipeScreen extends StatelessWidget {
     final isEditing = recipeToEdit != null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEEE0CB),
       appBar: AppBar(
         title: Text(isEditing ? 'Edit Recipe' : 'Add New Recipe'),
-        backgroundColor: const Color(0xFF839788),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

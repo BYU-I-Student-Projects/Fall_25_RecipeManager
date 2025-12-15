@@ -148,7 +148,7 @@ class _RecipeFormState extends State<RecipeForm> {
             icon: const Icon(Icons.save),
             label: Text(widget.submitButtonText),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF839788),
+              backgroundColor: Theme.of(context).primaryColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -166,15 +166,42 @@ class _RecipeFormState extends State<RecipeForm> {
     bool isNumber = false,
     bool isRequired = false,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      style: TextStyle(
+        color: theme.textTheme.bodyLarge?.color,
+      ),
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: TextStyle(
+          color: isDark ? Colors.grey[400] : Colors.grey[700],
+        ),
         filled: true,
-        fillColor: Colors.white70,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        fillColor: theme.inputDecorationTheme.fillColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(
+            color: isDark ? Colors.grey[600]! : Colors.grey[300]!,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(
+            color: isDark ? Colors.grey[600]! : Colors.grey[300]!,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(
+            color: theme.primaryColor,
+            width: 2,
+          ),
+        ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       ),
       validator: (value) {
