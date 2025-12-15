@@ -33,6 +33,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
     if (!_hasInitialized) {
       _hasInitialized = true;
       // Schedule the fetch for after the current build frame
+      // Schedule the fetch to happen after the build phase
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Provider.of<RecipeProvider>(context, listen: false).fetchRecipes();
       });

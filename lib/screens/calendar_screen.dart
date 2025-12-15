@@ -164,6 +164,156 @@ class _CalendarScreenState extends State<CalendarScreen> {
               // Default text styles
               defaultTextStyle: TextStyle(
                 color: isDark ? Colors.white : Colors.black,
+      body: Container(
+        color: const Color(0xFFEEE0CB),
+        child: Column(
+          children: [
+            TableCalendar(
+              firstDay: DateTime.utc(2010, 10, 16),
+              lastDay: DateTime.utc(2030, 3, 14),
+              focusedDay: _focusedDay,
+              calendarFormat: _calendarFormat,
+              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+              onDaySelected: (selectedDay, focusedDay) {
+                if (!isSameDay(_selectedDay, selectedDay)) {
+                  setState(() {
+                    _selectedDay = DateTime(
+                      selectedDay.year,
+                      selectedDay.month,
+                      selectedDay.day,
+                    );
+                    _focusedDay = focusedDay;
+
+                    // Reset category/meal selections every time the popup opens
+                    for (var i = 0; i < _selectedCategories.length; i++) {
+                      _selectedCategories[i] = null;
+                      _selectedRecipes[i] = null;
+                    }
+                  });
+
+                  Future.delayed(
+                    const Duration(milliseconds: 300),
+                    () {
+                      if (!context.mounted) return;
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          // === START OF KEY CHANGE: StatefulBuilder to handle local Dialog state ===
+                          return StatefulBuilder(
+                            builder: (BuildContext dialogContext,
+                                StateSetter dialogSetState) {
+                              return Dialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEEE0CB),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text(
+                                        'Your meals for today',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        '${selectedDay.day}/${selectedDay.month}/${selectedDay.year}',
+                                        style: const TextStyle(fontSize: 16),
+                                      ),
+                                      const SizedBox(height: 12),
+
+                                      // ===== Dropdowns (5 rows) =====
+                                      Consumer<MealDayProvider>(
+                                        builder: (context, mealProvider, _) {
+                                          if (mealProvider.isLoadingRecipes &&
+                                              mealProvider.recipes.isEmpty) {
+                                            return const Padding(
+                                              padding: EdgeInsets.all(16.0),
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            );
+                                          }
+
+                                          final categories =
+                                              mealProvider.availableMealTypes;
+
+                                          return Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: List.generate(5, (index) {
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                    bottom: 12),
+                                                child: _buildMealRow(
+                                                  rowIndex: index,
+                                                  categories: categories,
+                                                  mealProvider: mealProvider,
+                                                  dialogSetState:
+                                                      dialogSetState, // <<< WE PASS THE LOCAL SETSTATE
+                                                ),
+                                              );
+                                            }),
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(height: 20),
+
+                                      // ===== Save and Cancel Buttons =====
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(dialogContext),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          ElevatedButton(
+                                            onPressed:
+                                                _onSaveAllMeals, // <-- Calls the batch save function
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  const Color(0xFF839788),
+                                            ),
+                                            child: const Text('Save Meals'),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                          // === END OF KEY CHANGE ===
+                        },
+                      );
+                    },
+                  );
+                }
+              },
+              onFormatChanged: (format) {
+                if (_calendarFormat != format) {
+                  setState(() => _calendarFormat = format);
+                }
+              },
+              onPageChanged: (focusedDay) => _focusedDay = focusedDay,
+              calendarStyle: const CalendarStyle(
+                todayDecoration: BoxDecoration(
+                  color: Color(0xFF839788),
+                  shape: BoxShape.circle,
+                ),
+                selectedDecoration: BoxDecoration(
+                  color: accent1,
+                  shape: BoxShape.circle,
+                ),
               ),
               weekendTextStyle: TextStyle(
                 color: isDark ? Colors.white70 : Colors.black87,
@@ -195,6 +345,43 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ),
               weekendStyle: TextStyle(
                 color: isDark ? Colors.white70 : Colors.black87,
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// meal row builder function
+  Widget _buildMealRow({
+    required int rowIndex,
+    required List<String> categories,
+    required MealDayProvider mealProvider,
+    required StateSetter dialogSetState, // <<< NEW PARAMETER
+  }) {
+    final String? selectedCategory = _selectedCategories[rowIndex];
+    final Recipe? selectedRecipe = _selectedRecipes[rowIndex];
+
+    final List<Recipe> recipesForCategory = selectedCategory == null
+        ? <Recipe>[]
+        : mealProvider.recipesForMealType(selectedCategory);
+
+    return Row(
+      children: [
+        // Category Dropdown
+        Expanded(
+          flex: 1,
+          child: DropdownButtonFormField<String>(
+            initialValue: selectedCategory,
+            hint: const Text('Category'),
+            isExpanded: true,
+            decoration: InputDecoration(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              filled: true,
+              fillColor: Colors.grey[200],
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
               ),
             ),
             calendarBuilders: CalendarBuilders(
@@ -226,6 +413,28 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       'No day selected',
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
+        ),
+        const SizedBox(width: 8),
+
+        // Meal Dropdown filtered by category
+        Expanded(
+          flex: 2,
+          child: DropdownButtonFormField<Recipe>(
+            // If the previously selected recipe is no longer in the new category, its value is null
+            initialValue: recipesForCategory.contains(selectedRecipe)
+                ? selectedRecipe
+                : null,
+            hint: const Text('Meal'),
+            isExpanded: true,
+            decoration: InputDecoration(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              filled: true,
+              fillColor: Colors.grey[200],
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
             ),
           ),
         ],
