@@ -12,14 +12,12 @@ class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
   
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  _SettingsScreenState createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
   // User profile data
   String userName = '';
-  String userEmail = '';
-  String userPhone = '';
   String userAvatar = '';
 
   @override
@@ -33,8 +31,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       userName = prefs.getString('userName') ?? '';
-      userEmail = prefs.getString('userEmail') ?? '';
-      userPhone = prefs.getString('userPhone') ?? '';
       userAvatar = prefs.getString('userAvatar') ?? '';
     });
   }
@@ -43,14 +39,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _saveUserData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('userName', userName);
-    await prefs.setString('userEmail', userEmail);
-    await prefs.setString('userPhone', userPhone);
     await prefs.setString('userAvatar', userAvatar);
   }
 
   @override
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
+    final userEmail = user?.email ?? '';
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
     
@@ -68,7 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         children: <Widget>[
           // Profile Section
-          _buildProfileSection(isDark),
+          _buildProfileSection(isDark, userEmail),
           
           const Divider(height: 1),
           
@@ -123,7 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildProfileSection(bool isDark) {
+  Widget _buildProfileSection(bool isDark, String userEmail) {
     return Container(
       padding: const EdgeInsets.all(16.0),
       child: Row(
@@ -166,7 +161,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  userEmail.isEmpty ? 'Add your email' : userEmail,
+                  userEmail,
                   style: TextStyle(
                     fontSize: 14,
                     color: isDark ? Colors.grey[400] : Colors.grey[600],
@@ -186,9 +181,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 MaterialPageRoute(
                   builder: (context) => EditProfileScreen(
                     currentName: userName,
-                    currentEmail: userEmail,
-                    currentPhone: userPhone,
                     currentAvatar: userAvatar,
+                    userEmail: userEmail,
                   ),
                 ),
               );
@@ -197,8 +191,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (result != null) {
                 setState(() {
                   userName = result['name'] ?? userName;
-                  userEmail = result['email'] ?? userEmail;
-                  userPhone = result['phone'] ?? userPhone;
                   userAvatar = result['avatar'] ?? userAvatar;
                 });
                 // Save to SharedPreferences so it persists
@@ -288,16 +280,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 // Edit Profile Screen
 class EditProfileScreen extends StatefulWidget {
   final String currentName;
-  final String currentEmail;
-  final String currentPhone;
   final String currentAvatar;
+  final String userEmail;
   
   const EditProfileScreen({
     super.key,
     required this.currentName,
-    required this.currentEmail,
-    required this.currentPhone,
     required this.currentAvatar,
+    required this.userEmail,
   });
 
   @override
@@ -308,15 +298,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _emailController;
-  late TextEditingController _phoneController;
   late String _avatarUrl;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.currentName);
-    _emailController = TextEditingController(text: widget.currentEmail);
-    _phoneController = TextEditingController(text: widget.currentPhone);
+    _emailController = TextEditingController(text: widget.userEmail);
     _avatarUrl = widget.currentAvatar;
   }
 
@@ -324,23 +312,50 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
-  void _saveProfile() {
+  void _saveProfile() async {
     if (_formKey.currentState!.validate()) {
+      final newEmail = _emailController.text.trim();
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      
+      // Check if email has changed
+      if (newEmail != widget.userEmail && currentUser != null) {
+        try {
+          // Update email in Supabase Auth
+          await Supabase.instance.client.auth.updateUser(
+            UserAttributes(email: newEmail),
+          );
+          
+          if (!mounted) return;
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile updated! Check your new email to confirm the change.'),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error updating email: $e')),
+          );
+          return;
+        }
+      }
+      
       // Return the updated profile data
       Navigator.pop(context, {
         'name': _nameController.text,
-        'email': _emailController.text,
-        'phone': _phoneController.text,
         'avatar': _avatarUrl,
       });
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully')),
-      );
+      if (newEmail == widget.userEmail) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully')),
+        );
+      }
     }
   }
 
@@ -433,6 +448,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Full Name',
                     prefixIcon: Icon(Icons.person),
+                    hintText: 'Enter your name',
                   ),
                   onChanged: (value) {
                     if (mounted) {
@@ -449,13 +465,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 
                 const SizedBox(height: 16),
                 
-                // Email Field
+                // Email Field (editable)
                 TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(
                     labelText: 'Email',
                     prefixIcon: Icon(Icons.email),
+                    hintText: 'Enter your email',
                   ),
+                  keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
@@ -465,17 +483,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     }
                     return null;
                   },
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Phone Field
-                TextFormField(
-                  controller: _phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'Phone Number',
-                    prefixIcon: Icon(Icons.phone),
-                  ),
                 ),
                 
                 const SizedBox(height: 24),
@@ -653,7 +660,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             _buildSection(
               context,
               'Information We Collect',
-              'We collect information that you provide directly to us, including:\n\n• Account information (name, email address, phone number)\n• Profile information and preferences\n• Recipes you save or create\n• Grocery lists and meal plans\n• Usage data and app interactions',
+              'We collect information that you provide directly to us, including:\n\n• Account information (name, email address)\n• Profile information and preferences\n• Recipes you save or create\n• Grocery lists and meal plans\n• Usage data and app interactions',
             ),
             _buildSection(
               context,
@@ -693,7 +700,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Center(
               child: Text(
-                '© 2024 Recipe App. All rights reserved.',
+                '© 2025 Recipe App. All rights reserved.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),

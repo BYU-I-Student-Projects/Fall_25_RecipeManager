@@ -10,7 +10,7 @@ class _GrabHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Colors.grey.shade400;
+    final color = Theme.of(context).iconTheme.color?.withOpacity(0.5) ?? Colors.grey;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -367,20 +367,24 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFEEE0CB),
+      return Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_userId == null) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFEEE0CB),
+      return Scaffold(
         body: Center(
           child: Text(
             'Please log in to view your grocery list',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
+            style: TextStyle(
+              fontSize: 16,
+              color: theme.textTheme.bodyMedium?.color,
+            ),
           ),
         ),
       );
@@ -389,9 +393,7 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
     final sortedItems = _getSortedItems();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEEE0CB),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF839788),
         title: const Text('My Grocery List'),
         actions: [
           PopupMenuButton<String>(
@@ -424,11 +426,11 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
                       flex: 3,
                       child: TextField(
                         controller: _itemController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Item name',
                           border: OutlineInputBorder(),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: theme.inputDecorationTheme.fillColor,
                         ),
                         onSubmitted: (_) => _addItem(),
                       ),
@@ -438,11 +440,11 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
                       flex: 1,
                       child: TextField(
                         controller: _quantityController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Qty',
                           border: OutlineInputBorder(),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: theme.inputDecorationTheme.fillColor,
                         ),
                         keyboardType: TextInputType.number,
                         onSubmitted: (_) => _addItem(),
@@ -456,10 +458,10 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _selectedCategory,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           border: OutlineInputBorder(),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: theme.inputDecorationTheme.fillColor,
                         ),
                         items: _categories
                             .map((cat) => DropdownMenuItem(
@@ -481,10 +483,13 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
                     ElevatedButton(
                       onPressed: _addItem,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF839788),
+                        backgroundColor: theme.primaryColor,
                         padding: const EdgeInsets.all(16),
                       ),
-                      child: const Icon(Icons.add, color: Colors.white),
+                      child: Icon(
+                        Icons.add,
+                        color: isDark ? Colors.white : Colors.white,
+                      ),
                     ),
                   ],
                 ),
@@ -495,11 +500,14 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
           // ---------- LIST ----------
           Expanded(
             child: _groceryItems.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       'No items yet!\nAdd something to get started.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: theme.textTheme.bodyMedium?.color,
+                      ),
                     ),
                   )
                 : ReorderableListView.builder(
@@ -557,12 +565,12 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
                               horizontal: 16, vertical: 4),
                           elevation: item['checked'] ? 0 : 2,
                           color: item['checked']
-                              ? Colors.grey[300]
-                              : Colors.white,
+                              ? (isDark ? Colors.grey[800] : Colors.grey[300])
+                              : theme.cardColor,
                           child: ListTile(
                             leading: Checkbox(
                               value: item['checked'],
-                              activeColor: const Color(0xFF839788),
+                              activeColor: theme.primaryColor,
                               onChanged: (_) => _toggleCheck(actualIndex),
                             ),
                             title: Text(
@@ -572,17 +580,24 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
                                     ? TextDecoration.lineThrough
                                     : TextDecoration.none,
                                 color: item['checked']
-                                    ? Colors.grey
-                                    : Colors.black,
+                                    ? (isDark ? Colors.grey[500] : Colors.grey)
+                                    : theme.textTheme.bodyLarge?.color,
                               ),
                             ),
                             subtitle: Row(
                               children: [
-                                Icon(_getCategoryIcon(item['category']),
-                                    size: 14),
+                                Icon(
+                                  _getCategoryIcon(item['category']),
+                                  size: 14,
+                                  color: theme.textTheme.bodyMedium?.color,
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
-                                    '${item['category']} • Qty: ${item['quantity']}'),
+                                  '${item['category']} • Qty: ${item['quantity']}',
+                                  style: TextStyle(
+                                    color: theme.textTheme.bodyMedium?.color,
+                                  ),
+                                ),
                               ],
                             ),
                             trailing: Row(
@@ -590,7 +605,7 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
                               children: [
                                 IconButton(
                                   icon: const Icon(Icons.edit, size: 20),
-                                  color: const Color(0xFF839788),
+                                  color: theme.primaryColor,
                                   onPressed: () => _editItem(actualIndex),
                                 ),
                                 ReorderableDragStartListener(

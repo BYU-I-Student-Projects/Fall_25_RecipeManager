@@ -26,23 +26,25 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
   Widget build(BuildContext context) {
     final recipeProvider = Provider.of<RecipeProvider>(context);
     final recipe = recipeProvider.selectedRecipe;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    // --- Palette ---
-    const textColor = Color(0xFF000000);
-    const headingColor = Color(0xFF839788);
-    const backgroundColor = Color(0xFFEEE0CB); // Background for the dialog
-    const accent1 = Color(0xFFBAA898);
-    const accent2 = Color(0xFFBFD7EA);
+    // Dynamic colors based on theme
+    final textColor = theme.textTheme.bodyLarge?.color ?? Colors.black;
+    final headingColor = theme.primaryColor;
+    final backgroundColor = theme.dialogBackgroundColor;
+    final accent1 = isDark ? const Color(0xFF3D3D3D) : const Color(0xFFBAA898);
+    final accent2 = isDark ? const Color(0xFF4A5A6A) : const Color(0xFFBFD7EA);
 
     return Dialog(
       backgroundColor: backgroundColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      insetPadding: const EdgeInsets.all(16), // Spacing from screen edges
+      insetPadding: const EdgeInsets.all(16),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
         padding: const EdgeInsets.all(20.0),
         child: Column(
-          mainAxisSize: MainAxisSize.min, // Shrink to fit content height
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // --- Header (Title + Close Button) ---
@@ -53,32 +55,37 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                 Expanded(
                   child: Text(
                     recipe?.title ?? 'Loading...',
-                    style: const TextStyle(
-                      fontSize: 24, // Slightly smaller than full screen
+                    style: TextStyle(
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: headingColor,
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.grey),
+                  icon: Icon(Icons.close, color: theme.iconTheme.color),
                   onPressed: () => Navigator.pop(context),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
               ],
             ),
-            const Divider(height: 24, color: headingColor),
+            Divider(height: 24, color: headingColor),
 
             // --- Scrollable Body ---
             Expanded(
               child: recipeProvider.isLoadingDetails
                   ? const Center(child: CircularProgressIndicator())
                   : recipe == null
-                      ? const Center(child: Text('Recipe not found.'))
+                      ? Center(
+                          child: Text(
+                            'Recipe not found.',
+                            style: TextStyle(color: textColor),
+                          ),
+                        )
                       : SingleChildScrollView(
                           child: DefaultTextStyle(
-                            style: const TextStyle(color: textColor, fontSize: 16),
+                            style: TextStyle(color: textColor, fontSize: 16),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -87,10 +94,10 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                   spacing: 8,
                                   runSpacing: 8,
                                   children: [
-                                    _infoChip(Icons.schedule, '${recipe.prepTime} min prep', accent2),
-                                    _infoChip(Icons.soup_kitchen, '${recipe.cookTime} min cook', accent2),
-                                    _infoChip(Icons.restaurant, '${recipe.servings} srv', accent2),
-                                    _infoChip(Icons.local_fire_department, '${recipe.calPerServing} cal', accent2),
+                                    _infoChip(Icons.schedule, '${recipe.prepTime} min prep', accent2, isDark),
+                                    _infoChip(Icons.soup_kitchen, '${recipe.cookTime} min cook', accent2, isDark),
+                                    _infoChip(Icons.restaurant, '${recipe.servings} srv', accent2, isDark),
+                                    _infoChip(Icons.local_fire_department, '${recipe.calPerServing} cal', accent2, isDark),
                                   ],
                                 ),
                                 const SizedBox(height: 20),
@@ -100,16 +107,26 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                   padding: const EdgeInsets.symmetric(
                                       vertical: 8, horizontal: 12),
                                   decoration: BoxDecoration(
-                                    color: accent1.withValues(alpha: 0.2),
+                                    color: accent1.withOpacity(0.3),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text('Cuisine: ${recipe.cuisine}',
-                                          style: const TextStyle(fontWeight: FontWeight.w500)),
-                                      Text('Diet: ${recipe.dietRestrictions}',
-                                          style: const TextStyle(fontWeight: FontWeight.w500)),
+                                      Text(
+                                        'Cuisine: ${recipe.cuisine}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                          color: textColor,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Diet: ${recipe.dietRestrictions}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                          color: textColor,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -118,7 +135,7 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                 // --- Ingredients ---
                                 Text(
                                   'Ingredients',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: headingColor,
@@ -131,8 +148,20 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                     child: Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('• ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                        Expanded(child: Text(ingredient.trim())),
+                                        Text(
+                                          '• ',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: textColor,
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            ingredient.trim(),
+                                            style: TextStyle(color: textColor),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -142,7 +171,7 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                 // --- Instructions ---
                                 Text(
                                   'Instructions',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: headingColor,
@@ -158,8 +187,22 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                       child: Row(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text('$index. ', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                          Expanded(child: Text(step, style: const TextStyle(height: 1.4))),
+                                          Text(
+                                            '$index. ',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: textColor,
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Text(
+                                              step,
+                                              style: TextStyle(
+                                                height: 1.4,
+                                                color: textColor,
+                                              ),
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     );
@@ -176,19 +219,29 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
     );
   }
 
-  Widget _infoChip(IconData icon, String text, Color bgColor) {
+  Widget _infoChip(IconData icon, String text, Color bgColor, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: bgColor.withValues(alpha: 0.5),
+        color: bgColor.withOpacity(0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: Colors.black87),
+          Icon(
+            icon,
+            size: 16,
+            color: isDark ? Colors.white70 : Colors.black87,
+          ),
           const SizedBox(width: 4),
-          Text(text, style: const TextStyle(fontSize: 12, color: Colors.black87)),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? Colors.white70 : Colors.black87,
+            ),
+          ),
         ],
       ),
     );
