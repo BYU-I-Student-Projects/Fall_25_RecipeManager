@@ -3,7 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/recipe_provider.dart';
+import '../screens/add_recipe_screen.dart'; // Needed for navigation
 import '../widgets/grocery_helper.dart';
+import '../widgets/star_rating_picker.dart';
 
 class RecipeDetailDialog extends StatefulWidget {
   final int recipeId;
@@ -14,34 +16,93 @@ class RecipeDetailDialog extends StatefulWidget {
 }
 
 class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
-// 1. Declare the controller and a flag for initialization
   late TextEditingController _notesController;
-  bool _isInitialized = false;
+
+  // Rating state
+  int _myRating = 0;
+  double _avgRating = 0.0;
+  int _ratingCount = 0;
+  bool _isLoadingRatings = true;
 
   @override
   void initState() {
     super.initState();
-    // Initialize controller early
     _notesController = TextEditingController();
 
-    // Start fetching the recipe and notes right away (existing logic)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<RecipeProvider>(context, listen: false)
-          .fetchRecipeById(widget.recipeId);
+    // Load data after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final provider = Provider.of<RecipeProvider>(context, listen: false);
+
+      // Fetch the recipe details (this also fetches the notes internally)
+      await provider.fetchRecipeById(widget.recipeId);
+
+      // Populate the notes controller with the fetched notes
+      if (mounted) {
+        _notesController.text = provider.recipeNotes;
+      }
+
+      // Load the ratings
+      await _loadRatings();
     });
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  Future<void> _loadRatings() async {
+    final provider = Provider.of<RecipeProvider>(context, listen: false);
+    try {
+      final my = await provider.getMyRating(widget.recipeId);
+      final summary = await provider.getRatingSummary(widget.recipeId);
 
-    if (!_isInitialized) {
-      final recipeProvider =
-          Provider.of<RecipeProvider>(context, listen: false);
+      if (!mounted) return;
+      setState(() {
+        _myRating = my ?? 0;
+        _avgRating = (summary['avg'] as num).toDouble();
+        _ratingCount = summary['count'] as int;
+        _isLoadingRatings = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingRatings = false;
+      });
+      debugPrint('Error loading ratings: $e');
+    }
+  }
 
-      _notesController.text = recipeProvider.recipeNotes;
+  Future<void> _deleteRecipe(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Recipe?'),
+        content: const Text('Are you sure you want to delete this recipe?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
 
-      _isInitialized = true;
+    if (confirmed == true && mounted) {
+      final success = await Provider.of<RecipeProvider>(context, listen: false)
+          .deleteRecipe(widget.recipeId);
+
+      if (mounted) {
+        if (success) {
+          Navigator.pop(context); // Close dialog on success
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Recipe deleted')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to delete recipe')),
+          );
+        }
+      }
     }
   }
 
@@ -51,99 +112,111 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
     super.dispose();
   }
 
-  // --- Helper Widget Functions ---
-
-  Widget _infoChip(IconData icon, String text, Color bgColor) {
+  // --- Helper Widget Function ---
+  Widget _infoChip(IconData icon, String text, Color bgColor, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: bgColor.withValues(alpha: 127),
+        color: bgColor.withOpacity(0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: Colors.black87),
-          const SizedBox(width: 4),
-          Text(text,
-              style: const TextStyle(fontSize: 12, color: Colors.black87)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNotesPanel(BuildContext context) {
-    final recipeProvider = Provider.of<RecipeProvider>(context);
-    final recipe = recipeProvider.selectedRecipe;
-
-    if (recipe == null) {
-      return const Center(child: Text("No recipe loaded."));
-    }
-
-    if (_notesController.text != recipeProvider.recipeNotes) {
-      _notesController.value = _notesController.value.copyWith(
-        text: recipeProvider.recipeNotes,
-        selection:
-            TextSelection.collapsed(offset: recipeProvider.recipeNotes.length),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        // IMPORTANT: The column inside _buildNotesPanel needs to stretch
-        // to fill the height provided by its parent Expanded widget.
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'My Recipe Notes',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Icon(
+            icon,
+            size: 16,
+            color: isDark ? Colors.white70 : Colors.black87,
           ),
-          const SizedBox(height: 8),
-
-          // 1. WRAP THE TEXT FIELD IN EXPANDED
-          Expanded(
-            child: TextField(
-              controller: _notesController,
-              // 2. SET maxLines TO NULL for dynamic sizing
-              maxLines: null,
-              // 3. SET expands TO TRUE so it fills the Expanded parent
-              expands: true,
-              textAlignVertical: TextAlignVertical.top, // Start text at the top
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText:
-                    'Add your cooking notes, substitutions, or tips here...',
-              ),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? Colors.white70 : Colors.black87,
             ),
           ),
-          const SizedBox(height: 12),
-
-          // The Save Button (will sit at the bottom)
-          ElevatedButton(
-            onPressed: () {
-              // ... (saving logic)
-            },
-            child: const Text('Save Note'),
-          ),
         ],
       ),
     );
   }
 
-  // --- Main Build Method ---
+  // --- Notes Section ---
+  Widget _buildNotesSection(BuildContext context) {
+    final recipeProvider = Provider.of<RecipeProvider>(context);
+    final theme = Theme.of(context);
+    final headingColor = theme.primaryColor;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 32),
+        Text(
+          'My Notes',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: headingColor,
+          ),
+        ),
+        const SizedBox(height: 8),
+        recipeProvider.isLoadingNotes
+            ? const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  TextField(
+                    controller: _notesController,
+                    maxLines: 4,
+                    minLines: 2,
+                    decoration: InputDecoration(
+                      hintText: 'Add your private notes, tips, or modifications here...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      filled: true,
+                      fillColor: theme.cardColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      await recipeProvider.saveNotes(
+                          widget.recipeId, _notesController.text);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Note saved!')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.save, size: 18),
+                    label: const Text('Save Note'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: headingColor,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final recipeProvider = Provider.of<RecipeProvider>(context);
     final recipe = recipeProvider.selectedRecipe;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    // --- Palette ---
-    const textColor = Color(0xFF000000);
-    const headingColor = Color(0xFF839788);
-    const backgroundColor = Color(0xFFEEE0CB);
-    const accent1 = Color(0xFFBAA898);
-    const accent2 = Color(0xFFBFD7EA);
+    final textColor = theme.textTheme.bodyLarge?.color ?? Colors.black;
+    final headingColor = theme.primaryColor;
+    final backgroundColor = theme.dialogBackgroundColor;
+    final accent1 = isDark ? const Color(0xFF3D3D3D) : const Color(0xFFBAA898);
+    final accent2 = isDark ? const Color(0xFF4A5A6A) : const Color(0xFFBFD7EA);
 
     return Dialog(
       backgroundColor: backgroundColor,
@@ -156,7 +229,7 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Header (Title + Close Button) ---
+            // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,177 +237,226 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                 Expanded(
                   child: Text(
                     recipe?.title ?? 'Loading...',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: headingColor,
                     ),
                   ),
                 ),
+                
+                // --- Edit / Delete Menu ---
+                if (recipe != null)
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert, color: theme.iconTheme.color),
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        // Navigate to edit screen
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AddRecipeScreen(recipeToEdit: recipe),
+                          ),
+                        );
+                        // Refresh details when returning
+                        if (mounted) {
+                          recipeProvider.fetchRecipeById(widget.recipeId);
+                        }
+                      } else if (value == 'delete') {
+                        _deleteRecipe(context);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, size: 20),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, size: 20, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Delete', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.grey),
+                  icon: Icon(Icons.close, color: theme.iconTheme.color),
                   onPressed: () => Navigator.pop(context),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
               ],
             ),
-            const Divider(height: 24, color: headingColor),
+            Divider(height: 24, color: headingColor),
 
-            // --- Scrollable Body ---
+            // Content
             Expanded(
               child: recipeProvider.isLoadingDetails
                   ? const Center(child: CircularProgressIndicator())
                   : recipe == null
-                      ? const Center(child: Text('Recipe not found.'))
-                      : Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // LEFT — recipe details
-                            Expanded(
-                              flex: 2,
-                              child: SingleChildScrollView(
-                                child: DefaultTextStyle(
-                                  style: const TextStyle(
-                                      color: textColor, fontSize: 16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // --- Quick Info ---
-                                      Wrap(
-                                        spacing: 8,
-                                        runSpacing: 8,
-                                        children: [
-                                          _infoChip(
-                                              Icons.schedule,
-                                              '${recipe.prepTime} min prep',
-                                              accent2),
-                                          _infoChip(
-                                              Icons.soup_kitchen,
-                                              '${recipe.cookTime} min cook',
-                                              accent2),
-                                          _infoChip(
-                                              Icons.restaurant,
-                                              '${recipe.servings} srv',
-                                              accent2),
-                                          _infoChip(
-                                              Icons.local_fire_department,
-                                              '${recipe.calPerServing} cal',
-                                              accent2),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 20),
-
-                                      // --- Cuisine + Diet ---
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 8, horizontal: 12),
-                                        decoration: BoxDecoration(
-                                          // Corrected alpha value for ~0.2 opacity
-                                          color: accent1.withValues(alpha: 51),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
+                      ? Center(
+                          child: Text(
+                            'Recipe not found.',
+                            style: TextStyle(color: textColor),
+                          ),
+                        )
+                      : SingleChildScrollView(
+                          child: DefaultTextStyle(
+                            style: TextStyle(color: textColor, fontSize: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Ratings Block
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 10, horizontal: 12),
+                                  decoration: BoxDecoration(
+                                    color: accent1.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: _isLoadingRatings
+                                      ? const Row(
                                           children: [
-                                            Text('Cuisine: ${recipe.cuisine}',
-                                                style: const TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.w500)),
+                                            SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                  strokeWidth: 2),
+                                            ),
+                                            SizedBox(width: 10),
+                                            Text('Loading ratings...'),
+                                          ],
+                                        )
+                                      : Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Your rating',
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.w600),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            StarRatingPicker(
+                                              value: _myRating,
+                                              onChanged: (val) async {
+                                                setState(() => _myRating = val);
+                                                try {
+                                                  await recipeProvider
+                                                      .setRecipeRating(
+                                                    recipeId: widget.recipeId,
+                                                    rating: val,
+                                                  );
+                                                  await _loadRatings();
+                                                } catch (e) {
+                                                  debugPrint(
+                                                      'Error saving rating: $e');
+                                                }
+                                              },
+                                            ),
+                                            const SizedBox(height: 6),
                                             Text(
-                                                'Diet: ${recipe.dietRestrictions}',
-                                                style: const TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.w500)),
+                                              _ratingCount == 0
+                                                  ? 'No ratings yet'
+                                                  : 'Average: ${_avgRating.toStringAsFixed(1)} ($_ratingCount ratings)',
+                                              style:
+                                                  const TextStyle(fontSize: 13),
+                                            ),
                                           ],
                                         ),
-                                      ),
-                                      const SizedBox(height: 20),
+                                ),
+                                const SizedBox(height: 20),
 
-                                      // --- Ingredients ---
-                                      Text(
-                                        'Ingredients',
-                                        style: const TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                            color: headingColor),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      ...recipe.ingredients.map(
-                                        (ingredient) => Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 2.0),
-                                          child: Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              const Text('• ',
-                                                  style: TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight:
-                                                          FontWeight.bold)),
-                                              Expanded(
-                                                  child:
-                                                      Text(ingredient.trim())),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 20),
+                                // Description
+                                Text(
+                                  recipe.description,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.black87,
+                                    height: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
 
-                                      // --- Instructions ---
+                                // Info Chips
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    _infoChip(
+                                        Icons.schedule,
+                                        '${recipe.prepTime} min prep',
+                                        accent2,
+                                        isDark),
+                                    _infoChip(
+                                        Icons.soup_kitchen,
+                                        '${recipe.cookTime} min cook',
+                                        accent2,
+                                        isDark),
+                                    _infoChip(
+                                        Icons.restaurant,
+                                        '${recipe.servings} srv',
+                                        accent2,
+                                        isDark),
+                                    _infoChip(
+                                        Icons.local_fire_department,
+                                        '${recipe.calPerServing} cal',
+                                        accent2,
+                                        isDark),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+
+                                // Cuisine & Diet
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 8, horizontal: 12),
+                                  decoration: BoxDecoration(
+                                    color: accent1.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
                                       Text(
-                                        'Instructions',
-                                        style: const TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                            color: headingColor),
+                                        'Cuisine: ${recipe.cuisine}',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w500,
+                                            color: textColor),
                                       ),
-                                      const SizedBox(height: 8),
-                                      ...recipe.instructions
-                                          .asMap()
-                                          .entries
-                                          .map(
-                                        (entry) {
-                                          final index = entry.key + 1;
-                                          final step = entry.value.trim();
-                                          return Padding(
-                                            padding: const EdgeInsets.only(
-                                                bottom: 8.0),
-                                            child: Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text('$index. ',
-                                                    style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold)),
-                                                Expanded(
-                                                    child: Text(step,
-                                                        style: const TextStyle(
-                                                            height: 1.4))),
-                                              ],
-                                            ),
-                                          );
-                                        },
+                                      Text(
+                                        'Diet: ${recipe.dietRestrictions}',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w500,
+                                            color: textColor),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
-                            ),
+                                const SizedBox(height: 20),
 
-                                // --- Ingredients with Add Button ---
+                                // Ingredients
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     Text(
                                       'Ingredients',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
                                         color: headingColor,
@@ -347,15 +469,14 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                           recipe,
                                         );
                                       },
-                                      icon: const Icon(Icons.add_shopping_cart, size: 18),
+                                      icon: const Icon(Icons.add_shopping_cart,
+                                          size: 18),
                                       label: const Text('Add to List'),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: headingColor,
                                         foregroundColor: Colors.white,
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 8,
-                                        ),
+                                            horizontal: 12, vertical: 8),
                                       ),
                                     ),
                                   ],
@@ -363,24 +484,77 @@ class _RecipeDetailDialogState extends State<RecipeDetailDialog> {
                                 const SizedBox(height: 8),
                                 ...recipe.ingredients.map(
                                   (ingredient) => Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 2.0),
                                     child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        const Text('• ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                        Expanded(child: Text(ingredient.trim())),
+                                        Text(
+                                          '• ',
+                                          style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: textColor),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            ingredient.trim(),
+                                            style: TextStyle(color: textColor),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
                                 ),
                                 const SizedBox(height: 20),
 
-                            // RIGHT — Notes
-                            Expanded(
-                              flex: 1,
-                              child: _buildNotesPanel(context),
+                                // Instructions
+                                Text(
+                                  'Instructions',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: headingColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                ...recipe.instructions.asMap().entries.map(
+                                  (entry) {
+                                    final index = entry.key + 1;
+                                    final step = entry.value.trim();
+                                    return Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 8.0),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '$index. ',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: textColor),
+                                          ),
+                                          Expanded(
+                                            child: Text(
+                                              step,
+                                              style: TextStyle(
+                                                  height: 1.4,
+                                                  color: textColor),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+
+                                // Notes Section
+                                _buildNotesSection(context),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
             ),
           ],

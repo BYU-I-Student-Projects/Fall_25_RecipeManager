@@ -3,7 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
-import '../providers/recipe_provider.dart';
+import 'package:recipe_manager/providers/theme_provider.dart';
+import 'package:recipe_manager/providers/recipe_provider.dart';
 import '../providers/calendar_provider.dart';
 import 'package:recipe_manager/providers/recipe_provider.dart';
 
@@ -39,17 +40,22 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => RecipeProvider()),
-        ChangeNotifierProvider(create: (context) => MealDayProvider()),
+        ChangeNotifierProvider(create: (_) => RecipeProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => MealDayProvider()), // Ensure this is here from the previous fix
       ],
-      child: MaterialApp(
-        title: 'Recipe App',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color.fromARGB(255, 255, 255, 255)),
-          useMaterial3: true,
-        ),
-        home: AuthGate(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'Recipe App',
+            theme: themeProvider.lightTheme,
+            darkTheme: themeProvider.darkTheme,
+            themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            debugShowCheckedModeBanner: false,
+            // Point to AuthGate so it checks if the user is logged in first
+            home: const AuthGate(), 
+          );
+        },
       ),
     );
   }

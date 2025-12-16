@@ -1,9 +1,9 @@
-// lib/screens/add_recipe.dart
+// lib/screens/add_recipe_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/recipe_model.dart';
 import '../providers/recipe_provider.dart';
-import '../widgets/recipe_form.dart'; // Import the new widget
+import '../widgets/recipe_form.dart'; 
 
 class AddRecipeScreen extends StatelessWidget {
   final Recipe? recipeToEdit;
@@ -13,48 +13,74 @@ class AddRecipeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEditing = recipeToEdit != null;
+    final theme = Theme.of(context);
+    final canPop = Navigator.canPop(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEEE0CB),
-      appBar: AppBar(
-        title: Text(isEditing ? 'Edit Recipe' : 'Add New Recipe'),
-        backgroundColor: const Color(0xFF839788),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: RecipeForm(
-          initialRecipe: recipeToEdit,
-          submitButtonText: isEditing ? 'Save Changes' : 'Add Recipe',
-          onSubmit: (Recipe recipe) async {
-            // Handle logic here (Provider calls, snackbars, navigation)
-            final provider = Provider.of<RecipeProvider>(context, listen: false);
-            bool success;
+      // Removed AppBar
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Custom Header
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: Row(
+                  children: [
+                    // Only show back button if we can go back (i.e. we are editing)
+                    if (canPop) ...[
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back),
+                        onPressed: () => Navigator.pop(context),
+                        tooltip: 'Back',
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      isEditing ? 'Edit Recipe' : 'Add New Recipe',
+                      style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              RecipeForm(
+                initialRecipe: recipeToEdit,
+                submitButtonText: isEditing ? 'Save Changes' : 'Add Recipe',
+                onSubmit: (Recipe recipe) async {
+                  // Handle logic here (Provider calls, snackbars, navigation)
+                  final provider = Provider.of<RecipeProvider>(context, listen: false);
+                  bool success;
 
-            if (isEditing) {
-              success = await provider.updateRecipe(recipe);
-            } else {
-              success = await provider.addRecipe(recipe);
-            }
+                  if (isEditing) {
+                    success = await provider.updateRecipe(recipe);
+                  } else {
+                    success = await provider.addRecipe(recipe);
+                  }
 
-            if (context.mounted) {
-              if (success) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(isEditing ? 'Updated!' : 'Added!')),
-                );
-                // Safe pop check
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                }
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Error saving recipe.'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            }
-          },
+                  if (context.mounted) {
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(isEditing ? 'Updated!' : 'Added!')),
+                      );
+                      // Safe pop check
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Error saving recipe.'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

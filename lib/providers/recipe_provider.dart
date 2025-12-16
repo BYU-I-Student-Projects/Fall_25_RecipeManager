@@ -238,6 +238,57 @@ class RecipeProvider with ChangeNotifier {
     }
   }
 
+    // -----------------------------
+  // Ratings (per user, 1..5 stars)
+  // -----------------------------
+
+  Future<void> setRecipeRating({
+    required int recipeId,
+    required int rating,
+  }) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Not logged in');
+    if (rating < 1 || rating > 5) throw Exception('Rating must be 1..5');
+
+    await _supabase.from('recipe_ratings').upsert(
+      {
+        'recipe_id': recipeId,   // bigint in DB
+        'user_id': userId,       // uuid in DB
+        'rating': rating,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      onConflict: 'recipe_id,user_id',
+    );
+  }
+
+  Future<int?> getMyRating(int recipeId) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return null;
+
+    final res = await _supabase
+        .from('recipe_ratings')
+        .select('rating')
+        .eq('recipe_id', recipeId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    return res == null ? null : res['rating'] as int;
+  }
+
+  Future<Map<String, dynamic>> getRatingSummary(int recipeId) async {
+    final rows = await _supabase
+        .from('recipe_ratings')
+        .select('rating')
+        .eq('recipe_id', recipeId);
+
+    final ratings = (rows as List).map((r) => r['rating'] as int).toList();
+    if (ratings.isEmpty) return {'avg': 0.0, 'count': 0};
+
+    final sum = ratings.reduce((a, b) => a + b);
+    return {'avg': sum / ratings.length, 'count': ratings.length};
+  }
+
+
   Future<bool> deleteRecipe(int? id) async {
     if (id == null) {
       debugPrint('🚨 Error: Tried to delete a recipe with a null ID.');
@@ -297,12 +348,16 @@ class RecipeProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      await _supabase.from('recipe_notes').upsert({
-        'recipe_id': recipeId,
-        'user_uuid': user.id,
-        'note': content,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
+      // FIX: Added onConflict to handle unique constraint violations
+      await _supabase.from('recipe_notes').upsert(
+        {
+          'recipe_id': recipeId,
+          'user_uuid': user.id,
+          'note': content,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        onConflict: 'recipe_id,user_uuid',
+      );
     } catch (e) {
       debugPrint('🚨 CRITICAL Error saving notes: $e');
     }
